@@ -1,5 +1,0 @@
-2025-11-13
-
-- created a server class and gave it a name feild
-- created a header & nav bar with a title and 3 options "seat_table.html", "order.html", "current_tables.html"
-- created classes for Server, Order, Table, and Item (groundwork for the logic)
