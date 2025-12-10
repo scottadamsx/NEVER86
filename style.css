@@ -1,7 +1,7 @@
 header {
     background-color: rgb(53, 119, 251);
     padding:1%;
-    margin-bottom: 10px;
+    margin-bottom: 0px;
 }
 
 button {
@@ -17,8 +17,37 @@ h1 {
 
 body {
     background-color: antiquewhite;
+    margin:0px;
 }
 
 a {
     text-decoration: none;
 }
+
+nav {
+    float:left;
+    background-color: burlywood;
+    height: calc(100vh - 112px); /* 110px = your header height */
+}
+
+
+li {
+    margin:15px;
+    list-style:none;
+    background-color: aliceblue;
+    color: rgb(53, 119, 251);
+    border:2px black solid;
+    padding:3%;
+}
+
+.currentPage {
+    background-color: rgb(53, 119, 251);
+    color:aliceblue;
+}
+
+main {
+    padding: 10px 10px 10px 10px;
+    
+
+}
+
