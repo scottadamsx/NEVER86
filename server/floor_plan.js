@@ -1,6 +1,7 @@
 import {getMenu, getTables} from '../storage.js'
 
 
+
 document.addEventListener("DOMContentLoaded", () => {
 
     let tables = getTables()
@@ -17,5 +18,13 @@ function updateTableDisplay(tables) {
         const button = document.createElement("button")
         button.textContent = table.name
         display.appendChild(button)
+
+        button.addEventListener("click", () => {
+            tables.forEach(table => {
+                if (table.name == button.textContent) {
+                    console.log("chosen table:",table)
+                }
+            })
+        })
     })
 }

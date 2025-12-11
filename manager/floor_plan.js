@@ -1,5 +1,5 @@
 import {getMenu, getTables, updateStorage} from '../storage.js'
-
+import {Table} from '../objects.js'
 
 document.addEventListener("DOMContentLoaded", () => {
     const newTableBtn = document.getElementById("addTableBtn")
@@ -23,7 +23,8 @@ document.addEventListener("DOMContentLoaded", () => {
         contentDiv.appendChild(submitBtn)
         
         submitBtn.addEventListener("click", () => {
-            tables.push({name: input.value, id: Date.now()})
+            const table = new Table(input.value)
+            tables.push(table)
             console.log("Table added:", input.value)
             label.remove()
             input.remove()
