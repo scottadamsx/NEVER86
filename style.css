@@ -35,7 +35,7 @@ h1 {
     transition: transform 0.2s ease;
 }
 
-h2 {
+.header {
     color: rgba(255, 255, 255, 0.9);
     font-size: 1rem;
     font-weight: 400;
@@ -114,6 +114,7 @@ button {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
+    margin: 15px;
     box-shadow: 0 4px 12px rgba(53, 119, 251, 0.3);
 }
 
