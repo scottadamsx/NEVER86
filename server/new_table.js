@@ -1,5 +1,5 @@
 import {getMenu, getTables} from '../storage.js'
-import {Order} from '../objects.js'
+import {Order,Table} from '../objects.js'
 
     // globals
     let newTable
@@ -8,6 +8,7 @@ import {Order} from '../objects.js'
     let menu = getMenu()
     const display = document.getElementById("choiceDisplay")
 
+    let server = "Scott Adams"
     let order 
     let currentGuestId
     const orderedItems = document.getElementById("orderedItems")
@@ -55,6 +56,8 @@ function startNewTableOrder() {
     //create the new order
     order = new Order(newTable,numGuests)
 
+    createOrderButtons()
+
     // create a radio input for each guest based on the chosen guest num
     for (let i = 0; i < numGuests; i++) {
         const input = document.createElement("input")
@@ -67,7 +70,6 @@ function startNewTableOrder() {
             input.checked = true
             currentGuestId = input.value
         }
-
         const label = document.createElement("label")
         label.htmlFor = i
         label.textContent = `Guest ${i+1}`
@@ -92,9 +94,7 @@ function startNewTableOrder() {
                 orderedItems.appendChild(ul)
             } 
         })
-        
-
-        console.log(input,label)
+        // TESTING: console.log(input,label)
         // add it to DOM
         document.getElementById("tableGuests").appendChild(input)
         document.getElementById("tableGuests").appendChild(label)
@@ -133,5 +133,29 @@ function displayMenu() {
 }
 
 
+function createOrderButtons() {
+    // grab the div
+    const div = document.querySelector("#orderButtons")
 
+    // create the cancel order button
+    const cancelOrderBtn = document.createElement("button")
+    cancelOrderBtn.textContent = "Cancel Order"
+    cancelOrderBtn.style.background = "red"
+    cancelOrderBtn.addEventListener("click", () => {
+        window.location.reload()
+    })
+    div.appendChild(cancelOrderBtn)
+
+    // create the send to kitchen button
+    const submitOrderBtn = document.createElement("button")
+    submitOrderBtn.textContent = "Send To Kitchen"
+    submitOrderBtn.style.background = "green"
+    submitOrderBtn.addEventListener("click", () => {
+        console.log(newTable)
+        newTable.seat(server, order)
+        window.location.href = "home.html"
+    })
+    div.appendChild(submitOrderBtn)
+
+}
     
