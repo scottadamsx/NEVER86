@@ -26,7 +26,6 @@ export function getMenu() {
         menu = []
         console.log("blank menu!")
     }
-
     return menu
 }
 
