@@ -1,5 +1,5 @@
 import {getMenu, getTables} from '../storage.js'
-
+import { viewTableOrder } from './table_view.js'
 
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -25,10 +25,15 @@ function updateTableDisplay(tables) {
             button.addEventListener("click", () => {
                 tables.forEach(table => {
                     if (table.name == button.textContent) {
-                        console.log("chosen table:",table)
+                        tableClick(table)
                     }
                 })
             })
         }
     })
+}
+
+function tableClick(table) {
+    console.log("chosen table:",table)
+    viewTableOrder(table)
 }
