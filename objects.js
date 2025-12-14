@@ -1,19 +1,22 @@
+// TABLE CLASS
 export class Table {
-    constructor(name) {
+    constructor(name,server=null,order=null,status="inactive") {
         this.name = name
-        this.server = null
-        this.order = null
+        this.server = server
+        this.order = order
+        this.status = status
     }
     seat(server,order) {
         this.server = server
         this.order = order
-    }
-    
+        this.status = "active"
+    } 
 }
 
+// ODRER CLASS
 export class Order {
     constructor(table,numGuests) {
-        this.table = table
+        this.table = table.name
         this.numGuests = numGuests
         this.items = []
         for (let i = 0; i < numGuests; i++) {
@@ -26,6 +29,7 @@ export class Order {
     }
 }
 
+// ITEM CLASS
 export class Item {
     constructor(name, price) {
         this.name = name

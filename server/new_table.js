@@ -1,4 +1,4 @@
-import {getMenu, getTables} from '../storage.js'
+import {getMenu, getTables, updateStorage} from '../storage.js'
 import {Order,Table} from '../objects.js'
 
     // globals
@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     display.textContent = ""
     tables.forEach(table => {
+        if (table.status == "active") {return}
         const button = document.createElement("button")
         button.textContent = table.name
         display.appendChild(button)
@@ -53,7 +54,7 @@ function chooseNumGuests(max) {
 }
 
 function startNewTableOrder() {
-    //create the new order
+    // create the new order
     order = new Order(newTable,numGuests)
 
     createOrderButtons()
@@ -75,7 +76,6 @@ function startNewTableOrder() {
         label.textContent = `Guest ${i+1}`
 
         // every time the radio switches, change the "currentGuestId" global and display all items
-        
         input.addEventListener("change", () => {
             console.log("Guest selected:", input.value)
             currentGuestId = input.value
@@ -153,6 +153,7 @@ function createOrderButtons() {
     submitOrderBtn.addEventListener("click", () => {
         console.log(newTable)
         newTable.seat(server, order)
+        updateStorage(tables, menu)
         window.location.href = "home.html"
     })
     div.appendChild(submitOrderBtn)
