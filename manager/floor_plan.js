@@ -42,6 +42,9 @@ function updateTableDisplay(tables) {
     tables.forEach(table => {
         const button = document.createElement("button")
         button.textContent = table.name
+        if (table.status == "active") {
+            button.style.background = "#152b4eff"
+        }
         display.appendChild(button)
     })
 }

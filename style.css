@@ -190,16 +190,47 @@ a {
 }
 
 table {
-    border: solid black 1px;
-    width:80%;
-    padding:10px;
-    margin:20px;
+    border-collapse: collapse;
+    width: 80%;
+    margin: 20px auto;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 td, th {
-    border:solid 1px black;
+    border: 1px solid #e5e7eb;
     text-align: center;
+    padding: 1rem;
 }
+
+th {
+    background: linear-gradient(135deg, #3577fb 0%, #2563eb 100%);
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+}
+
 tr {
-    margin:20px;
+    transition: all 0.2s ease;
+}
+
+tbody tr:hover {
+    background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+    transform: scale(1.01);
+}
+
+tbody tr:nth-child(even) {
+    background: #f9fafb;
+}
+
+tbody tr:nth-child(even):hover {
+    background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+}
+
+td {
+    color: #374151;
 }
