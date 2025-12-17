@@ -20,8 +20,6 @@ function updateTableDisplay(tables) {
             button.style.background = "#152b4eff"
             display.appendChild(button)
         
-        
-
             button.addEventListener("click", () => {
                 tables.forEach(table => {
                     if (table.name == button.textContent) {

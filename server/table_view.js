@@ -1,5 +1,5 @@
-import {Table, Order} from '../objects.js'
-import { getMenu, getTables, updateStorage } from '../storage.js'
+import {Table, Order, Chit} from '../objects.js'
+import { getMenu, getTables, updateStorage, sendChitToKitchen } from '../storage.js'
 
 export function viewTableOrder(table) {
     // clear anything in the main rn
@@ -33,12 +33,19 @@ export function viewTableOrder(table) {
     addItemsMenu(table)
 }
 
-export function addItemsMenu(table,order=table.order) {
-    let currentGuestId = 0
+// FIX: Pass chit as parameter to keep it consistent
+export function addItemsMenu(table, order=table.order, chit=null) {
+    // FIX: Use an object to hold currentGuestId so it can be referenced by menu buttons
+    const guestState = { currentGuestId: 0 }
 
     const main = document.querySelector("main")
 
-    createOrderButtons(table,order)
+    // FIX: Create chit here if not provided
+    if (!chit) {
+        chit = new Chit(table)
+    }
+
+    createOrderButtons(table, order, chit)
 
     // create div for ordered items
     const orderedItems = document.createElement("div")
@@ -59,21 +66,20 @@ export function addItemsMenu(table,order=table.order) {
 
         if (i == 0) {
             input.checked = true
-            currentGuestId = input.value
+            guestState.currentGuestId = input.value
         }
         const label = document.createElement("label")
         label.htmlFor = i
         label.textContent = `Guest ${i + 1}`
 
-        // every time the radio switches, change the "currentGuestId" global and display all items
+        // every time the radio switches, change the "currentGuestId" and display all items
         input.addEventListener("change", () => {
             orderedItems.innerHTML = ''
             console.log("Guest selected:", input.value)
-            currentGuestId = input.value
+            guestState.currentGuestId = input.value
             let guestItems = order.items[input.value]
             console.log(guestItems)
            
-
             if (guestItems.length > 0) {
                 const ul = document.createElement("ul")
                 ul.id = "guestItemList"
@@ -85,19 +91,17 @@ export function addItemsMenu(table,order=table.order) {
                 orderedItems.appendChild(ul)
             }
         })
-        // TESTING: console.log(input,label)
         // add it to DOM
         tableGuests.appendChild(input)
         tableGuests.appendChild(label)
     }
-    addItemsFromMenu(table,order, currentGuestId)
+    // FIX: Pass the guestState object instead of the value
+    addItemsFromMenu(table, guestState, order, chit)
 }
 
-function addItemsFromMenu(table,order=table.order,currentGuestId) {
-
-    // grab menu
+// FIX: Accept guestState object to get current guest dynamically
+function addItemsFromMenu(table, guestState, order=table.order, chit) {
     const menu = getMenu()
-
     const main = document.querySelector("main")
     const menuGrid = document.createElement("div")
     main.appendChild(menuGrid)
@@ -105,7 +109,7 @@ function addItemsFromMenu(table,order=table.order,currentGuestId) {
     // display menu items in the menuGrid
     menu.forEach(item => { 
         const button = document.createElement("button")
-
+    
         const name = document.createElement("h4")
         name.textContent = item.name
         button.appendChild(name)
@@ -116,24 +120,30 @@ function addItemsFromMenu(table,order=table.order,currentGuestId) {
         
         // add an item when clicked 
         button.addEventListener("click", () => {
-            order.addItem(item,currentGuestId)
+            // FIX: Use guestState.currentGuestId to get the CURRENT guest at click time
+            const currentGuest = guestState.currentGuestId
+            console.log(`Adding ${item.name} for Guest ${parseInt(currentGuest) + 1}`)
+            
+            // add it to the order for the correct guest
+            order.addItem(item, currentGuest)
+            // add it to chit (same chit instance throughout)
+            chit.addItem(item)
             const p = document.createElement("p")
             p.textContent = `${item.name} - Price: ${item.price}`
             document.getElementById("orderedItems").appendChild(p)
             
-            console.log(order)
-
+            console.log("Current order:", order)
+            console.log("Current chit:", chit)
         })
         menuGrid.appendChild(button)
     })
 }
 
-function createOrderButtons(table,order) {
+export function createOrderButtons(table, order, chit) {
     const tables = getTables()
     const menu = getMenu()
 
     const main = document.querySelector("main")
-    // grab the div
     const div = document.createElement("div")
 
     // create the cancel order button
@@ -150,14 +160,21 @@ function createOrderButtons(table,order) {
     submitOrderBtn.textContent = "Send To Kitchen"
     submitOrderBtn.style.background = "green"
     submitOrderBtn.addEventListener("click", () => {
-        console.log(table)
+        console.log("Submitting order for table:", table)
+        console.log("Chit being sent:", chit)
+        
+        // Seat the table with the order
         table.seat(table.server, order)
+
+        // Send the chit to kitchen
+        sendChitToKitchen(chit)
 
         // Find the matching table in the tables array and update it
         const tableToUpdate = tables.find(t => t.name === table.name)
         if (tableToUpdate) {
             tableToUpdate.seat(table.server, order)
         }
+        
         updateStorage(tables, menu)
         window.location.href = "home.html"
     })

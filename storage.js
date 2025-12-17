@@ -29,6 +29,17 @@ export function getTables() {
     return tables
 }
 
+// FIX: Return the kitchen array and parse it correctly
+export function getKitchen() {
+    let kitchen = []
+    if (localStorage.kitchen) {
+        kitchen = JSON.parse(localStorage.kitchen)
+        console.log("kitchen imported:", kitchen)
+    } else {
+        console.log("no chits in kitchen!")
+    }
+    return kitchen
+}
 
 export function getMenu() {
     let menu
@@ -42,5 +53,23 @@ export function getMenu() {
     return menu
 }
 
+// FIX: Properly handle JSON serialization and array operations
+export function sendChitToKitchen(chit) {
+    let kitchen = []
+    
+    if (localStorage.kitchen) {
+        kitchen = JSON.parse(localStorage.kitchen)
+    }
+    
+    kitchen.push(chit)
+    localStorage.kitchen = JSON.stringify(kitchen)
+    console.log("Chit sent to kitchen:", chit)
+}
 
-
+export function removeTableByTableName(tableName) {
+    const tables = getTables()
+    const menu = getMenu()
+    // FIX: Use filter instead of forEach with pop (which only removes last item)
+    const updatedTables = tables.filter(table => table.name !== tableName)
+    updateStorage(updatedTables, menu)
+}

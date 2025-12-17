@@ -1,8 +1,11 @@
-import {getMenu, getTables, updateStorage} from '../storage.js'
+import {getMenu, getTables, updateStorage, removeTableByTableName} from '../storage.js'
 import {Table} from '../objects.js'
+
+
 
 document.addEventListener("DOMContentLoaded", () => {
     const newTableBtn = document.getElementById("addTableBtn")
+    const removeTableBtn = document.getElementById("removeTableBtn")
 
     let tables = getTables()
     let menu = getMenu()
@@ -34,6 +37,11 @@ document.addEventListener("DOMContentLoaded", () => {
         })
     })
 
+    removeTableBtn.addEventListener("click", () => {
+        let table = prompt("WHich table would you like to remove?:")
+        removeTableByTableName(table)
+    })
+
 })
 
 function updateTableDisplay(tables) {
@@ -48,3 +56,5 @@ function updateTableDisplay(tables) {
         display.appendChild(button)
     })
 }
+
+

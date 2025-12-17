@@ -234,3 +234,7 @@ tbody tr:nth-child(even):hover {
 td {
     color: #374151;
 }
+
+.red {
+    background:red;
+}

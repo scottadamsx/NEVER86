@@ -1,20 +1,19 @@
 import {getMenu, getTables, updateStorage} from '../storage.js'
-import {Order,Table} from '../objects.js'
-import {addItemsMenu} from './table_view.js'
+import {Order, Table, Chit} from '../objects.js'
+import {addItemsMenu, createOrderButtons} from './table_view.js'
 
-    // globals
-    let newTable
-    let numGuests
-    let tables = getTables()
-    let menu = getMenu()
-    const display = document.getElementById("choiceDisplay")
+// globals
+let newTable
+let numGuests
+let tables = getTables()
+let menu = getMenu()
+const display = document.getElementById("choiceDisplay")
+let chit
 
-    let server = "Scott Adams"
-    let order 
-    
+let server = "Scott Adams"
+let order 
 
 document.addEventListener("DOMContentLoaded", () => {
-
     display.textContent = ""
     tables.forEach(table => {
         if (table.status == "active") {return}
@@ -37,7 +36,6 @@ document.addEventListener("DOMContentLoaded", () => {
 })
 
 function chooseNumGuests(max) {
-
     document.getElementById("numGuests").textContent = "how many guests are dining at this table?"
     for (let i = 1; i <= max; i++) {
         const button = document.createElement("button")
@@ -55,44 +53,10 @@ function chooseNumGuests(max) {
 
 function startNewTableOrder() {
     // create the new order
-    order = new Order(newTable,numGuests)
+    order = new Order(newTable, numGuests)
+    chit = new Chit(newTable)
 
-    createOrderButtons()
-
-    // create a radio input for each guest based on the chosen guest num
-    addItemsMenu(newTable, order)
-
-    
+    // FIX: Pass the chit to addItemsMenu so it's the same instance
+    addItemsMenu(newTable, order, chit)
 }
 
-
-
-
-function createOrderButtons() {
-    const main = document.querySelector("main")
-    // grab the div
-    const div = document.querySelector("#orderButtons")
-
-    // create the cancel order button
-    const cancelOrderBtn = document.createElement("button")
-    cancelOrderBtn.textContent = "Cancel Order"
-    cancelOrderBtn.style.background = "red"
-    cancelOrderBtn.addEventListener("click", () => {
-        window.location.reload()
-    })
-    div.appendChild(cancelOrderBtn)
-
-    // create the send to kitchen button
-    const submitOrderBtn = document.createElement("button")
-    submitOrderBtn.textContent = "Send To Kitchen"
-    submitOrderBtn.style.background = "green"
-    submitOrderBtn.addEventListener("click", () => {
-        console.log(newTable)
-        newTable.seat(server, order)
-        updateStorage(tables, menu)
-        window.location.href = "home.html"
-    })
-    div.appendChild(submitOrderBtn)
-    main.appendChild(div)
-}
-    

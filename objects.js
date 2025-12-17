@@ -1,3 +1,12 @@
+import { getKitchen,getMenu, getTables } from "./storage.js"
+export class Restaurant {
+    constructor() {
+        this.menu = getMenu()
+        this.tables = getTables()
+        this.kitchen = getKitchen()
+    }
+}
+
 // TABLE CLASS
 export class Table {
     constructor(name,server=null,order=null,status="inactive") {
@@ -34,5 +43,16 @@ export class Item {
     constructor(name, price) {
         this.name = name
         this.price = price
+    }
+}
+
+export class Chit {
+    constructor(table) {
+        this.tableName = table.name
+        this.items = []
+        this.timeStamp = new Date()
+    }
+    addItem(item) {
+        this.items.push(item)
     }
 }
