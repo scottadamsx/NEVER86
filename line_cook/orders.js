@@ -1,14 +1,14 @@
 import { getKitchen } from '../storage.js'
 
-document.addEventListener("DOMContentLoaded", () => {
-    displayKitchenOrders()
+document.addEventListener("DOMContentLoaded", async () => {
+    await displayKitchenOrders()
 })
 
-function displayKitchenOrders() {
+async function displayKitchenOrders() {
     const main = document.querySelector("main")
     main.innerHTML = ""
     
-    const kitchen = getKitchen()
+    const kitchen = await getKitchen()
     
     if (kitchen.length === 0) {
         const emptyMessage = document.createElement("h2")
@@ -42,7 +42,7 @@ function createChitCard(chit, index) {
     header.appendChild(tableName)
     
     const timestamp = document.createElement("p")
-    const time = new Date(chit.timeStamp)
+    const time = new Date(chit.timeStamp || chit.createdAt)
     timestamp.textContent = time.toLocaleTimeString('en-US', { 
         hour: '2-digit', 
         minute: '2-digit' 
@@ -58,7 +58,7 @@ function createChitCard(chit, index) {
     
     chit.items.forEach(item => {
         const li = document.createElement("li")
-        li.textContent = `${item.name} - $${item.price}`
+        li.textContent = `${item.name} - ${item.price.toFixed(2)}`
         itemsList.appendChild(li)
     })
     
@@ -91,34 +91,34 @@ function createChitCard(chit, index) {
     return card
 }
 
-function completeOrder(index) {
-    let kitchen = getKitchen()
+async function completeOrder(index) {
+    let kitchen = await getKitchen()
     
     // Remove the completed order
     kitchen.splice(index, 1)
     
-    // Update localStorage
+    // Update storage using the storage module
     localStorage.kitchen = JSON.stringify(kitchen)
     
     console.log(`Order ${index} completed!`)
     
     // Refresh the display
-    displayKitchenOrders()
+    await displayKitchenOrders()
 }
 
-function deleteOrder(index) {
+async function deleteOrder(index) {
     if (confirm("Are you sure you want to delete this order?")) {
-        let kitchen = getKitchen()
+        let kitchen = await getKitchen()
         
         // Remove the order
         kitchen.splice(index, 1)
         
-        // Update localStorage
+        // Update storage
         localStorage.kitchen = JSON.stringify(kitchen)
         
         console.log(`Order ${index} deleted!`)
         
         // Refresh the display
-        displayKitchenOrders()
+        await displayKitchenOrders()
     }
 }

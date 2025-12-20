@@ -1,50 +1,60 @@
-import {getMenu, getTables, updateStorage} from '../storage.js'
-import {Order, Table, Chit} from '../objects.js'
-import {addItemsMenu, createOrderButtons} from './table_view.js'
+import {getMenu, getTables} from '../storage.js'
+import {Order, Chit} from '../objects.js'
+import {addItemsMenu} from './table_view.js'
 
 // globals
 let newTable
 let numGuests
-let tables = getTables()
-let menu = getMenu()
+let tables
+let menu
 const display = document.getElementById("choiceDisplay")
 let chit
-
-let server = "Scott Adams"
 let order 
 
-document.addEventListener("DOMContentLoaded", () => {
+const SERVER_NAME = "Scott Adams" // You can change this or make it dynamic
+
+document.addEventListener("DOMContentLoaded", async () => {
+    // Load data
+    tables = await getTables()
+    menu = await getMenu()
+    
     display.textContent = ""
-    tables.forEach(table => {
-        if (table.status == "active") {return}
+    
+    // Show only available tables
+    const availableTables = tables.filter(table => table.status === "available")
+    
+    if (availableTables.length === 0) {
+        display.innerHTML = "<p>No available tables. Please clear a table first.</p>"
+        return
+    }
+    
+    availableTables.forEach(table => {
         const button = document.createElement("button")
-        button.textContent = table.name
+        button.textContent = `${table.name} (${table.capacity} seats)`
         display.appendChild(button)
 
         button.addEventListener("click", () => {
-            tables.forEach(table => {
-                if (table.name == button.textContent) {
-                    console.log("chosen table:",table)
-                    newTable = table
-                    display.innerHTML = ""
-                    document.getElementById("title").textContent = table.name
-                    chooseNumGuests(8)
-                }
-            })
+            console.log("Chosen table:", table)
+            newTable = table
+            display.innerHTML = ""
+            document.getElementById("title").textContent = table.name
+            // Use the table's actual capacity instead of max 8
+            chooseNumGuests(table.capacity)
         })
     })
 })
 
 function chooseNumGuests(max) {
-    document.getElementById("numGuests").textContent = "how many guests are dining at this table?"
+    document.getElementById("numGuests").textContent = `How many guests are dining at this table? (Max: ${max})`
+    
     for (let i = 1; i <= max; i++) {
         const button = document.createElement("button")
         button.textContent = i
         display.appendChild(button)
 
         button.addEventListener("click", () => {
-            numGuests = button.textContent
-            document.getElementById("numGuests").textContent = `${numGuests} guests`
+            numGuests = parseInt(button.textContent)
+            document.getElementById("numGuests").textContent = `${numGuests} guest${numGuests > 1 ? 's' : ''}`
             display.innerHTML = ""
             startNewTableOrder()
         })
@@ -52,11 +62,12 @@ function chooseNumGuests(max) {
 }
 
 function startNewTableOrder() {
-    // create the new order
-    order = new Order(newTable, numGuests)
-    chit = new Chit(newTable)
+    // Create the new order using the new Order class
+    order = new Order(newTable.id, numGuests, SERVER_NAME)
+    
+    // Create chit
+    chit = new Chit(newTable, order)
 
-    // FIX: Pass the chit to addItemsMenu so it's the same instance
+    // Start the ordering interface
     addItemsMenu(newTable, order, chit)
 }
-
