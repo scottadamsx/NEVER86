@@ -127,14 +127,14 @@ function KitchenOrders() {
                           <span className={`font-medium ${item.done ? 'line-through' : ''}`}>
                             {item.name}
                           </span>
-                          {item.modifications && (
-                            <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
-                              ({item.modifications})
-                            </span>
-                          )}
                         </div>
                         <span className="text-sm text-gray-500 dark:text-gray-400">G{item.guestNumber}</span>
                       </div>
+                      {item.modifications && (
+                        <div className="text-sm font-semibold text-blue-600 dark:text-blue-400 mt-1">
+                          → {item.modifications}
+                        </div>
+                      )}
                       {item.notes && (
                         <div className="text-sm text-orange-600 dark:text-orange-400 mt-1">
                           Note: {item.notes}

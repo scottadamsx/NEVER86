@@ -1,9 +1,18 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { X, Users, Plus, Minus, Send, Trash2, CheckCircle, Droplet, Utensils, Coffee, Square, FlaskConical } from 'lucide-react';
+import { 
+  X, Users, Plus, Send, Trash2, CheckCircle, 
+  Droplet, Utensils, Coffee, Square, FlaskConical,
+  Clock, DollarSign, ChevronRight, Minus, Edit2, Check
+} from 'lucide-react';
+import { Button } from '../../components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Badge } from '../../components/ui/Badge';
+import { Input } from '../../components/ui/Input';
 import { TableSkeleton } from '../../components/SkeletonLoader';
 import { formatTimeElapsed } from '../../utils/timeFormat';
 
@@ -11,7 +20,12 @@ function ServerTables() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { success, error: showError } = useToast();
-  const { tables = [], orders = [], menuItems = [], chits = [], staff = [], seatTable, getOrderByTable, createOrder, addItemToOrder, removeItemFromOrder, sendToKitchen, markChitAsRun } = useData();
+  const { 
+    tables = [], orders = [], menuItems = [], chits = [], staff = [], 
+    seatTable, getOrderByTable, createOrder, addItemToOrder, 
+    removeItemFromOrder, sendToKitchen, markChitAsRun 
+  } = useData();
+  
   const [selectedTable, setSelectedTable] = useState(null);
   const [showSeatModal, setShowSeatModal] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
@@ -24,47 +38,31 @@ function ServerTables() {
   const [selectedMenuItem, setSelectedMenuItem] = useState(null);
   const [customizations, setCustomizations] = useState('');
   const [customNotes, setCustomNotes] = useState('');
-  const [showSentItemModal, setShowSentItemModal] = useState(false);
-  const [selectedSentItem, setSelectedSentItem] = useState(null);
-  const [orderViewMode, setOrderViewMode] = useState('menu'); // 'menu' or 'ordered'
-  const [showRefillModal, setShowRefillModal] = useState(false);
-  const [selectedRefillItem, setSelectedRefillItem] = useState(null);
-  const [quickActions, setQuickActions] = useState([]);
+  const [orderViewMode, setOrderViewMode] = useState('menu');
+  const [selectedModifiers, setSelectedModifiers] = useState({});
+  const [showSendConfirmModal, setShowSendConfirmModal] = useState(false);
+  const [itemsToSend, setItemsToSend] = useState([]);
+  const [editingOrderItem, setEditingOrderItem] = useState(null);
 
-  const getQuickActionIcon = (type) => {
-    switch (type) {
-      case 'napkins': return <Square size={16} />;
-      case 'cutlery': return <Utensils size={16} />;
-      case 'water': return <Droplet size={16} />;
-      case 'condiments': return <FlaskConical size={16} />;
-      case 'drinks': return <Coffee size={16} />;
-      default: return null;
-    }
-  };
-
-  // Update timer every second
+  // Update timer
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Get server's section from staff data
+  // Get server's section
   const mySection = useMemo(() => {
     const serverStaff = staff.find(s => s.id === currentUser?.id);
-    return serverStaff?.section || 'A'; // Default to 'A' if not found
+    return serverStaff?.section || 'A';
   }, [staff, currentUser?.id]);
 
   const myTables = useMemo(() => tables.filter(t => t.section === mySection), [tables, mySection]);
 
-  const getTimeElapsed = (seatedAt) => {
-    return formatTimeElapsed(seatedAt, currentTime);
-  };
+  const getTimeElapsed = (seatedAt) => formatTimeElapsed(seatedAt, currentTime);
 
   const getOrderTotal = (tableId) => {
     const order = orders.find(o => o.tableId === tableId && o.status === 'active');
-    if (!order) return 0;
+    if (!order || !order.items) return 0;
     return order.items.reduce((sum, item) => sum + item.price, 0);
   };
 
@@ -77,9 +75,7 @@ function ServerTables() {
     }
   };
 
-  const handleBillOut = (tableId) => {
-    navigate(`/server/billout/${tableId}`);
-  };
+  const handleBillOut = (tableId) => navigate(`/server/billout/${tableId}`);
 
   const handleOpenOrder = (table) => {
     if (!currentUser) return;
@@ -88,15 +84,14 @@ function ServerTables() {
     if (!order) {
       order = createOrder(table.id, currentUser.id, table.guestCount);
     }
-    // Always get the latest order from context to ensure we have the most up-to-date data
     const latestOrder = orders.find(o => o.id === order.id) || order;
     setCurrentOrder(latestOrder);
-    setSelectedGuest(1); // Reset to first guest
-    setOrderViewMode('menu'); // Reset to menu view
+    setSelectedGuest(1);
+    setOrderViewMode('menu');
     setShowOrderModal(true);
   };
 
-  // Sync currentOrder with orders from context when orders change
+  // Sync currentOrder with context
   useEffect(() => {
     if (currentOrder && showOrderModal) {
       const updatedOrder = orders.find(o => o.id === currentOrder.id);
@@ -104,925 +99,713 @@ function ServerTables() {
         setCurrentOrder(updatedOrder);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orders, showOrderModal]);
+  }, [orders, showOrderModal, currentOrder]);
 
   const handleAddItem = (menuItem) => {
     if (!currentOrder) return;
-    // Show customization modal
     setSelectedMenuItem(menuItem);
     setCustomizations('');
     setCustomNotes('');
+    // Initialize modifiers state
+    const initialMods = {};
+    (menuItem.modifiers || []).forEach(mod => {
+      initialMods[mod.name] = null;
+    });
+    setSelectedModifiers(initialMods);
     setShowCustomizationModal(true);
   };
 
-  const handleConfirmAddItem = () => {
-    if (!currentOrder || !selectedMenuItem) return;
+  // Check if all required modifiers are selected
+  const canAddItem = () => {
+    if (!selectedMenuItem) return false;
+    const requiredMods = (selectedMenuItem.modifiers || []).filter(m => m.required);
+    return requiredMods.every(mod => selectedModifiers[mod.name] !== null);
+  };
 
+  // Calculate modifier price additions
+  const getModifierPrice = () => {
+    if (!selectedMenuItem) return 0;
+    let extra = 0;
+    (selectedMenuItem.modifiers || []).forEach(mod => {
+      const selected = selectedModifiers[mod.name];
+      if (selected) {
+        const option = mod.options.find(o => o.name === selected);
+        if (option) extra += option.price;
+      }
+    });
+    return extra;
+  };
+
+  const handleConfirmAddItem = () => {
+    if (!currentOrder || !selectedMenuItem || !canAddItem()) return;
+    
+    // Build modifications string from selected modifiers
+    const modStrings = [];
+    (selectedMenuItem.modifiers || []).forEach(mod => {
+      const selected = selectedModifiers[mod.name];
+      if (selected && selected !== 'No Sauce' && selected !== 'No Side' && selected !== 'No Protein') {
+        modStrings.push(selected);
+      }
+    });
+    if (customizations) modStrings.push(customizations);
+    
+    const totalPrice = selectedMenuItem.price + getModifierPrice();
+    
     const orderItem = {
       id: `oi-${Date.now()}-${Math.random()}`,
       menuItemId: selectedMenuItem.id,
       name: selectedMenuItem.name,
       guestNumber: selectedGuest,
-      modifications: customizations,
+      modifications: modStrings.join(', '),
+      modifiers: { ...selectedModifiers },
       notes: customNotes,
-      price: selectedMenuItem.price,
+      price: totalPrice,
       sentToKitchen: false
     };
-
     addItemToOrder(currentOrder.id, orderItem);
-    // Update local state to reflect the change immediately
-    setCurrentOrder({
-      ...currentOrder,
-      items: [...currentOrder.items, orderItem]
-    });
-    
-    // Close modal
+    setCurrentOrder({ ...currentOrder, items: [...(currentOrder.items || []), orderItem] });
     setShowCustomizationModal(false);
     setSelectedMenuItem(null);
     setCustomizations('');
     setCustomNotes('');
+    setSelectedModifiers({});
   };
 
   const handleRemoveItem = (itemId) => {
-    if (!currentOrder) return;
-    
+    if (!currentOrder || !currentOrder.items) return;
     const item = currentOrder.items.find(i => i.id === itemId);
     removeItemFromOrder(currentOrder.id, itemId);
-    if (item) {
-      success(`Removed ${item.name} from order`);
+    if (item) success(`Removed ${item.name}`);
+    setCurrentOrder({ ...currentOrder, items: currentOrder.items.filter(i => i.id !== itemId) });
+  };
+
+  const handleOpenSendConfirm = () => {
+    if (!currentOrder || !selectedTable || !currentOrder.items) return;
+    const items = currentOrder.items.filter(item => 
+      !item.sentToKitchen && menuItems.find(m => m.id === item.menuItemId)?.category !== 'drinks'
+    );
+    if (items.length > 0) {
+      setItemsToSend(items);
+      setShowSendConfirmModal(true);
     }
-    
-    // Update local state
-    const updatedItems = currentOrder.items.filter(item => item.id !== itemId);
+  };
+
+  const handleConfirmSendToKitchen = () => {
+    if (!currentOrder || !selectedTable || itemsToSend.length === 0) return;
+    sendToKitchen(currentOrder.id, itemsToSend, selectedTable.number, currentUser?.displayName || 'Server');
+    success(`Sent ${itemsToSend.length} item(s) to kitchen`);
     setCurrentOrder({
       ...currentOrder,
-      items: updatedItems
+      items: (currentOrder.items || []).map(item => 
+        itemsToSend.some(sent => sent.id === item.id) ? { ...item, sentToKitchen: true } : item
+      )
     });
+    setShowSendConfirmModal(false);
+    setItemsToSend([]);
   };
 
-  const handleSendToKitchen = () => {
-    if (!currentOrder || !selectedTable) return;
+  const handleEditItemFromConfirm = (item) => {
+    const menuItem = menuItems.find(m => m.id === item.menuItemId);
+    if (!menuItem) return;
+    setEditingOrderItem(item);
+    setSelectedMenuItem(menuItem);
+    // Restore modifiers from item
+    setSelectedModifiers(item.modifiers || {});
+    setCustomizations(item.modifications?.split(', ').filter(m => {
+      // Filter out modifier selections to get only custom text
+      const modOptions = (menuItem.modifiers || []).flatMap(mod => mod.options.map(o => o.name));
+      return !modOptions.includes(m);
+    }).join(', ') || '');
+    setCustomNotes(item.notes || '');
+    setShowSendConfirmModal(false);
+    setShowCustomizationModal(true);
+  };
+
+  const handleUpdateItem = () => {
+    if (!currentOrder || !selectedMenuItem || !editingOrderItem || !canAddItem()) return;
     
-    const itemsToSend = currentOrder.items.filter(item => !item.sentToKitchen && menuItems.find(m => m.id === item.menuItemId)?.category !== 'drinks');
+    const modStrings = [];
+    (selectedMenuItem.modifiers || []).forEach(mod => {
+      const selected = selectedModifiers[mod.name];
+      if (selected && selected !== 'No Sauce' && selected !== 'No Side' && selected !== 'No Protein') {
+        modStrings.push(selected);
+      }
+    });
+    if (customizations) modStrings.push(customizations);
     
-    if (itemsToSend.length > 0) {
-      sendToKitchen(
-        currentOrder.id,
-        itemsToSend,
-        selectedTable.number,
-        currentUser?.displayName || 'Server'
-      );
-      success(`Sent ${itemsToSend.length} item(s) to kitchen`);
-      
-      // Mark items as sent
-      setCurrentOrder({
-        ...currentOrder,
-        items: currentOrder.items.map(item => 
-          itemsToSend.some(sent => sent.id === item.id) 
-            ? { ...item, sentToKitchen: true }
-            : item
-        )
-      });
+    const totalPrice = selectedMenuItem.price + getModifierPrice();
+    
+    const updatedItem = {
+      ...editingOrderItem,
+      modifications: modStrings.join(', '),
+      modifiers: { ...selectedModifiers },
+      notes: customNotes,
+      price: totalPrice,
+    };
+    
+    const updatedItems = (currentOrder.items || []).map(item => 
+      item.id === editingOrderItem.id ? updatedItem : item
+    );
+    
+    setCurrentOrder({ ...currentOrder, items: updatedItems });
+    // Also update in context
+    const updatedOrder = { ...currentOrder, items: updatedItems };
+    // Re-open send confirm with updated items
+    const items = updatedItems.filter(item => 
+      !item.sentToKitchen && menuItems.find(m => m.id === item.menuItemId)?.category !== 'drinks'
+    );
+    
+    setShowCustomizationModal(false);
+    setSelectedMenuItem(null);
+    setEditingOrderItem(null);
+    setCustomizations('');
+    setCustomNotes('');
+    setSelectedModifiers({});
+    
+    if (items.length > 0) {
+      setItemsToSend(items);
+      setShowSendConfirmModal(true);
     }
   };
 
-  const categories = menuItems && menuItems.length > 0 
+  const categories = menuItems?.length > 0 
     ? ['all', ...new Set(menuItems.map(item => item.category).filter(Boolean))]
     : ['all'];
-  const filteredMenuItems = menuItems && menuItems.length > 0
+  
+  const filteredMenuItems = menuItems?.length > 0
     ? (selectedCategory === 'all' 
         ? menuItems.filter(item => item.available && item.onMenu)
         : menuItems.filter(item => item.category === selectedCategory && item.available && item.onMenu))
     : [];
 
-  const getCurrentOrderTotal = () => {
-    if (!currentOrder) return 0;
-    return currentOrder.items.reduce((sum, item) => sum + item.price, 0);
-  };
+  const getCurrentOrderTotal = () => currentOrder?.items.reduce((sum, item) => sum + item.price, 0) || 0;
+  const getItemsByGuest = (guestNum) => currentOrder?.items.filter(item => item.guestNumber === guestNum) || [];
 
-  const getItemsByGuest = (guestNum) => {
-    if (!currentOrder) return [];
-    return currentOrder.items.filter(item => item.guestNumber === guestNum);
-  };
-
-  const getStatusBadge = (table) => {
-    switch (table.status) {
-      case 'available':
-        return <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-sm">Available</span>;
-      case 'occupied':
-        return <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">Occupied</span>;
-      case 'reserved':
-        return <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">Reserved</span>;
-      default:
-        return null;
-    }
-  };
-
-  // Safety check - don't render if essential data is missing
   if (!tables || !menuItems) {
     return (
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">My Tables</h1>
+      <div className="p-4">
+        <h1 className="text-2xl font-bold mb-6">My Tables</h1>
         <TableSkeleton />
       </div>
     );
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">My Tables</h1>
-
-      {/* Tables Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {myTables.map(table => (
-          <div
-            key={table.id}
-            className={`bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border-2 ${
-              table.status === 'available'
-                ? 'border-green-200 dark:border-green-800'
-                : table.status === 'occupied'
-                ? 'border-blue-200 dark:border-blue-800'
-                : 'border-gray-200 dark:border-slate-700'
-            }`}
-          >
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Table {table.number}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{table.seats} seats</p>
-              </div>
-              {getStatusBadge(table)}
-            </div>
-
-            {table.status === 'occupied' && (
-              <div className="space-y-2 mb-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">Guests</span>
-                  <span className="text-gray-900 dark:text-white">{table.guestCount}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">Time</span>
-                  <span className="text-gray-900 dark:text-white">{getTimeElapsed(table.seatedAt)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">Order Total</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">${getOrderTotal(table.id).toFixed(2)}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-2">
-              {table.status === 'available' && (
-                <button
-                  onClick={() => {
-                    setSelectedTable(table);
-                    setShowSeatModal(true);
-                  }}
-                  className="flex-1 py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  Seat
-                </button>
-              )}
-              {table.status === 'occupied' && (() => {
-                // Check if food is ready to be run
-                const readyChit = chits.find(c => c.tableNumber === table.number && c.status === 'ready' && !c.run);
-                const hasReadyFood = !!readyChit;
-                
-                return (
-                  <>
-                    {hasReadyFood ? (
-                      <button 
-                        onClick={() => {
-                          if (readyChit) {
-                            markChitAsRun(readyChit.id);
-                          }
-                        }}
-                        className="flex-1 py-2 px-4 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <CheckCircle size={16} />
-                        Run Food
-                      </button>
-                    ) : (
-                      <button 
-                        onClick={() => handleOpenOrder(table)}
-                        className="flex-1 py-2 px-4 bg-server-primary text-white rounded-lg hover:bg-server-primary/90 transition-colors"
-                      >
-                        Order
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleBillOut(table.id)}
-                      className="flex-1 py-2 px-4 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors"
-                    >
-                      Bill Out
-                    </button>
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-        ))}
+    <div className="p-4 pb-20 md:pb-4">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">My Tables</h1>
+          <p className="text-muted-foreground text-sm">Section {mySection}</p>
+        </div>
+        <Badge variant="secondary">{myTables.filter(t => t.status === 'occupied').length} active</Badge>
       </div>
 
-      {/* Seat Table Modal */}
-      {showSeatModal && selectedTable && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-xl">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Seat Table {selectedTable.number}
-              </h2>
-              <button
-                onClick={() => {
-                  setShowSeatModal(false);
-                  setSelectedTable(null);
-                }}
-                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-              >
-                <X size={24} />
-              </button>
-            </div>
+      {/* Mobile-first Table Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {myTables.map(table => {
+          const readyChit = chits.find(c => c.tableNumber === table.number && c.status === 'ready' && !c.run);
+          const hasReadyFood = !!readyChit;
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Number of Guests
-              </label>
-              <div className="grid grid-cols-4 gap-2">
+          return (
+            <Card 
+              key={table.id}
+              className={`overflow-hidden transition-all ${
+                table.status === 'available' ? 'border-emerald-500/30 dark:border-emerald-500/30' :
+                table.status === 'occupied' ? 'border-primary/30' : 'border-border'
+              } ${hasReadyFood ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-background' : ''}`}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl">Table {table.number}</CardTitle>
+                  <Badge 
+                    variant={
+                      table.status === 'available' ? 'success' : 
+                      table.status === 'occupied' ? 'default' : 'secondary'
+                    }
+                  >
+                    {table.status}
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">{table.seats} seats</p>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                {table.status === 'occupied' && (
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-muted rounded-lg p-2">
+                      <Users className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
+                      <p className="text-sm font-medium">{table.guestCount}</p>
+                    </div>
+                    <div className="bg-muted rounded-lg p-2">
+                      <Clock className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
+                      <p className="text-sm font-medium">{getTimeElapsed(table.seatedAt) || '0s ago'}</p>
+                    </div>
+                    <div className="bg-muted rounded-lg p-2">
+                      <DollarSign className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
+                      <p className="text-sm font-medium">${getOrderTotal(table.id).toFixed(0)}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions - Large touch targets for mobile */}
+                <div className="flex gap-2">
+                  {table.status === 'available' && (
+                    <Button
+                      onClick={() => { setSelectedTable(table); setShowSeatModal(true); }}
+                      className="flex-1 h-12 text-base bg-emerald-600 hover:bg-emerald-700"
+                    >
+                      <Users className="w-5 h-5 mr-2" />
+                      Seat
+                    </Button>
+                  )}
+                  {table.status === 'occupied' && (
+                    <>
+                      {hasReadyFood ? (
+                        <Button 
+                          onClick={() => readyChit && markChitAsRun(readyChit.id)}
+                          className="flex-1 h-12 text-base bg-amber-600 hover:bg-amber-700"
+                        >
+                          <CheckCircle className="w-5 h-5 mr-2" />
+                          Run Food
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline"
+                          onClick={() => handleOpenOrder(table)}
+                          className="flex-1 h-12 text-base border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                        >
+                          Order
+                          <ChevronRight className="w-5 h-5 ml-1" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        onClick={() => handleBillOut(table.id)}
+                        className="flex-1 h-12 text-base border-2"
+                      >
+                        Bill Out
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Seat Modal */}
+      {showSeatModal && selectedTable && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[100] p-0 sm:p-4">
+          <Card className="w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl max-h-[80vh] overflow-auto animate-slide-in">
+            <CardHeader className="border-b">
+              <div className="flex items-center justify-between">
+                <CardTitle>Seat Table {selectedTable.number}</CardTitle>
+                <Button variant="ghost" size="icon" onClick={() => { setShowSeatModal(false); setSelectedTable(null); }}>
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <p className="text-sm font-medium text-muted-foreground mb-3">Number of Guests</p>
+              <div className="grid grid-cols-4 gap-2 mb-6">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
                   <button
                     key={num}
                     onClick={() => setGuestCount(num)}
-                    className={`p-3 rounded-lg font-medium transition-colors ${
+                    className={`h-14 text-lg font-semibold rounded-lg transition-all ${
                       guestCount === num
-                        ? 'bg-server-primary text-white'
-                        : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600'
+                        ? 'bg-emerald-600 text-white ring-4 ring-emerald-400 shadow-lg'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600 border border-slate-600'
                     }`}
                   >
                     {num}
                   </button>
                 ))}
               </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowSeatModal(false);
-                  setSelectedTable(null);
-                }}
-                className="flex-1 py-2 px-4 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSeatTable}
-                className="flex-1 py-2 px-4 bg-green-600 text-white rounded-xl hover:bg-green-700 flex items-center justify-center gap-2"
-              >
-                <Users size={18} />
-                Seat {guestCount}
-              </button>
-            </div>
-          </div>
-        </div>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => { setShowSeatModal(false); setSelectedTable(null); }} className="flex-1 h-12">
+                  Cancel
+                </Button>
+                <Button onClick={handleSeatTable} className="flex-1 h-12 bg-emerald-600 hover:bg-emerald-700">
+                  <Users className="w-5 h-5 mr-2" />
+                  Seat {guestCount}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>,
+        document.body
       )}
 
-      {/* Order Modal */}
-      {showOrderModal && selectedTable && currentOrder && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-6xl max-h-[90vh] shadow-xl flex flex-col">
-            {/* Header */}
-            <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-              <div className="flex justify-between items-center mb-4">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Table {selectedTable.number} - Order</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{selectedTable.guestCount} guests</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowOrderModal(false);
-                    setSelectedTable(null);
-                    setCurrentOrder(null);
-                  }}
-                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="mt-4">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Quick Actions</p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => {
-                      const action = { type: 'napkins', label: 'Napkins', timestamp: Date.now() };
-                      setQuickActions(prev => [...prev, action]);
-                      // In real app, this would send a notification or add to a requests list
-                      setTimeout(() => {
-                        setQuickActions(prev => prev.filter(a => a.timestamp !== action.timestamp));
-                      }, 2000);
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors text-sm font-medium"
-                  >
-                    <Square size={16} />
-                    Napkins
-                  </button>
-                  <button
-                    onClick={() => {
-                      const action = { type: 'cutlery', label: 'Cutlery', timestamp: Date.now() };
-                      setQuickActions(prev => [...prev, action]);
-                      setTimeout(() => {
-                        setQuickActions(prev => prev.filter(a => a.timestamp !== action.timestamp));
-                      }, 2000);
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors text-sm font-medium"
-                  >
-                    <Utensils size={16} />
-                    Cutlery
-                  </button>
-                  <button
-                    onClick={() => {
-                      const action = { type: 'water', label: 'More Water', timestamp: Date.now() };
-                      setQuickActions(prev => [...prev, action]);
-                      setTimeout(() => {
-                        setQuickActions(prev => prev.filter(a => a.timestamp !== action.timestamp));
-                      }, 2000);
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors text-sm font-medium"
-                  >
-                    <Droplet size={16} />
-                    More Water
-                  </button>
-                  <button
-                    onClick={() => {
-                      const action = { type: 'condiments', label: 'Condiments', timestamp: Date.now() };
-                      setQuickActions(prev => [...prev, action]);
-                      setTimeout(() => {
-                        setQuickActions(prev => prev.filter(a => a.timestamp !== action.timestamp));
-                      }, 2000);
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors text-sm font-medium"
-                  >
-                    <FlaskConical size={16} />
-                    Condiments
-                  </button>
-                  <button
-                    onClick={() => {
-                      const action = { type: 'drinks', label: 'More Drinks', timestamp: Date.now() };
-                      setQuickActions(prev => [...prev, action]);
-                      setTimeout(() => {
-                        setQuickActions(prev => prev.filter(a => a.timestamp !== action.timestamp));
-                      }, 2000);
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors text-sm font-medium"
-                  >
-                    <Coffee size={16} />
-                    More Drinks
-                  </button>
-                </div>
-                {quickActions.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {quickActions.map((action) => (
-                      <div
-                        key={action.timestamp}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-xs font-medium animate-pulse"
-                      >
-                        {getQuickActionIcon(action.type)}
-                        {action.label} requested
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+      {/* Order Modal - Full screen on mobile */}
+      {showOrderModal && selectedTable && currentOrder && createPortal(
+        <div className="fixed inset-0 bg-white dark:bg-slate-950 z-[100] flex flex-col">
+          {/* Header */}
+          <div className="border-b bg-card px-4 py-3 flex items-center justify-between shrink-0">
+            <div>
+              <h2 className="text-lg font-bold">Table {selectedTable.number}</h2>
+              <p className="text-sm text-muted-foreground">{selectedTable.guestCount} guests · ${getCurrentOrderTotal().toFixed(2)}</p>
             </div>
+            <Button variant="ghost" size="icon" onClick={() => { setShowOrderModal(false); setSelectedTable(null); setCurrentOrder(null); }}>
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
 
-            <div className="flex-1 overflow-hidden flex">
-              {/* Menu Side */}
-              <div className="w-2/3 border-r border-gray-200 dark:border-slate-700 flex flex-col">
-                {/* View Mode Toggle */}
-                <div className="p-3 border-b border-gray-200 dark:border-slate-700">
-                  <div className="flex gap-2 mb-3">
-                    <button
-                      onClick={() => setOrderViewMode('menu')}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                        orderViewMode === 'menu'
-                          ? 'bg-server-primary text-white'
-                          : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600'
-                      }`}
-                    >
-                      Menu
-                    </button>
-                    <button
-                      onClick={() => setOrderViewMode('ordered')}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                        orderViewMode === 'ordered'
-                          ? 'bg-server-primary text-white'
-                          : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600'
-                      }`}
-                    >
-                      Ordered Items
-                    </button>
-                  </div>
-                </div>
+          {/* Quick Actions */}
+          <div className="border-b px-4 py-2 flex gap-2 overflow-x-auto shrink-0">
+            {[
+              { icon: Droplet, label: 'Water' },
+              { icon: Square, label: 'Napkins' },
+              { icon: Utensils, label: 'Cutlery' },
+              { icon: FlaskConical, label: 'Condiments' },
+            ].map(({ icon: Icon, label }) => (
+              <Button key={label} variant="outline" size="sm" className="shrink-0">
+                <Icon className="w-4 h-4 mr-1" />
+                {label}
+              </Button>
+            ))}
+          </div>
 
-                {/* Guest Selector Tabs */}
-                {orderViewMode === 'menu' && (
-                  <div className="p-3 border-b border-gray-200 dark:border-slate-700 overflow-x-auto">
-                    <div className="flex gap-2 mb-3">
-                      {Array.from({ length: selectedTable.guestCount }, (_, i) => i + 1).map(guestNum => {
-                        const guestItems = getItemsByGuest(guestNum);
-                        return (
-                          <button
-                            key={guestNum}
-                            onClick={() => setSelectedGuest(guestNum)}
-                            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors relative ${
-                              selectedGuest === guestNum
-                                ? 'bg-server-primary text-white'
-                                : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600'
-                            }`}
-                          >
-                            Guest {guestNum}
-                            {guestItems.length > 0 && (
-                              <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs ${
-                                selectedGuest === guestNum
-                                  ? 'bg-white text-server-primary'
-                                  : 'bg-server-primary text-white'
-                              }`}>
-                                {guestItems.length}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
+          {/* Guest Tabs */}
+          <div className="border-b px-4 py-2 flex gap-2 overflow-x-auto shrink-0">
+            {Array.from({ length: selectedTable.guestCount }, (_, i) => i + 1).map(guestNum => {
+              const guestItems = getItemsByGuest(guestNum);
+              const isSelected = selectedGuest === guestNum;
+              return (
+                <button
+                  key={guestNum}
+                  onClick={() => setSelectedGuest(guestNum)}
+                  className={`shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-server-primary text-white ring-2 ring-server-primary ring-offset-2 ring-offset-background'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-border'
+                  }`}
+                >
+                  Guest {guestNum}
+                  {guestItems.length > 0 && (
+                    <span className={`ml-1 px-1.5 py-0.5 rounded text-xs font-semibold ${
+                      isSelected ? 'bg-white/20 text-white' : 'bg-primary/10 text-primary'
+                    }`}>
+                      {guestItems.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Category Filter */}
+          <div className="border-b px-4 py-2 flex gap-2 overflow-x-auto shrink-0 bg-muted/30">
+            {categories.map(cat => {
+              const isSelected = selectedCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`shrink-0 capitalize px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    isSelected
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Menu Items Grid or Order View */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {orderViewMode === 'menu' ? (
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                {filteredMenuItems.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleAddItem(item)}
+                    className="bg-card border rounded-xl p-4 text-left hover:bg-accent transition-colors active:scale-[0.98]"
+                  >
+                    <div className="flex justify-between items-start gap-2 mb-2">
+                      <h3 className="font-semibold text-sm leading-tight">{item.name}</h3>
+                      <span className="font-bold text-primary shrink-0">${item.price}</span>
                     </div>
-                  </div>
-                )}
-
-                {orderViewMode === 'menu' ? (
-                  <>
-                    {/* Category Filter */}
-                    <div className="p-3 border-b border-gray-200 dark:border-slate-700 overflow-x-auto">
-                      <div className="flex gap-2">
-                        {categories.map(cat => (
-                          <button
-                            key={cat}
-                            onClick={() => setSelectedCategory(cat)}
-                            className={`px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors text-sm ${
-                              selectedCategory === cat
-                                ? 'bg-gray-700 dark:bg-gray-600 text-white'
-                                : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600'
-                            }`}
-                          >
-                            {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Menu Items */}
-                    <div className="flex-1 overflow-y-auto p-4">
-                      <div className="grid grid-cols-2 gap-3">
-                        {filteredMenuItems.map(item => (
-                          <button
-                            key={item.id}
-                            onClick={() => handleAddItem(item)}
-                            className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors text-left"
-                          >
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="flex-1">
-                                <h3 className="font-semibold text-gray-900 dark:text-white">{item.name}</h3>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.description}</p>
-                              </div>
-                              <span className="font-bold text-server-primary ml-2">${item.price.toFixed(2)}</span>
-                            </div>
-                            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-600">
-                              <span className="text-xs text-gray-600 dark:text-gray-400">
-                                Tap to add to Guest {selectedGuest}
-                              </span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  /* Ordered Items by Category */
-                  <div className="flex-1 overflow-y-auto p-4">
-                    {currentOrder && currentOrder.items.length > 0 ? (
-                      <div className="space-y-6">
-                        {['drinks', 'sides', 'appetizers', 'mains', 'desserts'].map(category => {
-                          const categoryItems = currentOrder.items.filter(item => {
-                            const menuItem = menuItems.find(m => m.id === item.menuItemId);
-                            return menuItem?.category === category;
-                          });
-                          
-                          if (categoryItems.length === 0) return null;
-
-                          const categoryLabels = {
-                            drinks: 'Drinks',
-                            sides: 'Sides',
-                            appetizers: 'Appetizers',
-                            mains: 'Main Courses',
-                            desserts: 'Desserts'
-                          };
-
-                          return (
-                            <div key={category} className="border-b border-gray-200 dark:border-slate-700 pb-4 last:border-b-0">
-                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                {categoryLabels[category]}
-                              </h3>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                                {category === 'drinks' ? 'Beverages and cocktails' : 
-                                 category === 'sides' ? 'Side dishes and accompaniments' :
-                                 category === 'appetizers' ? 'Starters and small plates' :
-                                 category === 'mains' ? 'Main entrees' :
-                                 'Sweet endings'}
-                              </p>
-                              <div className="space-y-2">
-                                {categoryItems.map(item => {
-                                  const menuItem = menuItems.find(m => m.id === item.menuItemId);
-                                  const isDrink = menuItem?.category === 'drinks';
-                                  
-                                  return (
-                                    <button
-                                      key={item.id}
-                                      onClick={() => {
-                                        if (isDrink) {
-                                          setSelectedRefillItem(item);
-                                          setShowRefillModal(true);
-                                        }
-                                      }}
-                                      className={`w-full text-left bg-gray-50 dark:bg-slate-700 rounded-lg p-3 transition-colors ${
-                                        isDrink ? 'hover:bg-gray-100 dark:hover:bg-slate-600 cursor-pointer' : ''
-                                      }`}
-                                      disabled={!isDrink}
-                                    >
-                                      <div className="flex justify-between items-start">
-                                        <div className="flex-1">
-                                          <div className="flex items-center gap-2 mb-1">
-                                            <span className="font-semibold text-gray-900 dark:text-white">{item.name}</span>
-                                            <span className="text-xs text-gray-500 dark:text-gray-400">Guest {item.guestNumber}</span>
-                                            {isDrink && (
-                                              <span className="text-xs text-blue-600 dark:text-blue-400">(Tap to refill)</span>
-                                            )}
-                                          </div>
-                                          {item.modifications && (
-                                            <p className="text-xs text-gray-600 dark:text-gray-400">Mod: {item.modifications}</p>
-                                          )}
-                                          {item.notes && (
-                                            <p className="text-xs text-orange-600 dark:text-orange-400">Note: {item.notes}</p>
-                                          )}
-                                        </div>
-                                        <div className="text-right">
-                                          <p className="font-semibold text-gray-900 dark:text-white">${item.price.toFixed(2)}</p>
-                                          {item.sentToKitchen && (
-                                            <span className="text-xs text-green-600 dark:text-green-400">Sent</span>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <p className="text-gray-500 dark:text-gray-400">No items ordered yet</p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                    <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
+                  </button>
+                ))}
               </div>
-
-              {/* Order Side */}
-              <div className="w-1/3 flex flex-col">
-                <div className="p-4 border-b border-gray-200 dark:border-slate-700">
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Current Order</h3>
-                  <div className="text-2xl font-bold text-server-primary">${getCurrentOrderTotal().toFixed(2)}</div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-4">
-                  {Array.from({ length: selectedTable.guestCount }, (_, i) => i + 1).map(guestNum => {
-                    const guestItems = getItemsByGuest(guestNum);
-                    if (guestItems.length === 0) return null;
-                    
+            ) : (
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg mb-3">Current Order</h3>
+                {!currentOrder.items || currentOrder.items.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No items in order yet</p>
+                ) : (
+                  currentOrder.items.map((item, idx) => {
+                    const menuItem = menuItems.find(m => m.id === item.menuItemId);
                     return (
-                      <div key={guestNum} className="mb-4">
-                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">Guest {guestNum}</h4>
-                        <div className="space-y-2">
-                          {guestItems.map(item => (
-                            <div key={item.id} className="bg-gray-50 dark:bg-slate-700 rounded-lg p-2 flex justify-between items-start">
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</p>
-                                {item.modifications && (
-                                  <p className="text-xs text-gray-500 dark:text-gray-400">Mod: {item.modifications}</p>
-                                )}
-                                {item.notes && (
-                                  <p className="text-xs text-orange-600 dark:text-orange-400">Note: {item.notes}</p>
-                                )}
-                                <p className="text-sm font-semibold text-gray-900 dark:text-white mt-1">${item.price.toFixed(2)}</p>
-                              </div>
-                              {!item.sentToKitchen && (
-                                <button
-                                  onClick={() => handleRemoveItem(item.id)}
-                                  className="text-red-500 hover:text-red-700 ml-2"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              )}
-                              {item.sentToKitchen && (
-                                <button
-                                  onClick={() => {
-                                    setSelectedSentItem(item);
-                                    setShowSentItemModal(true);
-                                  }}
-                                  className="text-xs text-green-600 dark:text-green-400 ml-2 hover:underline"
-                                  title="View sent item details"
-                                >
-                                  Sent
-                                </button>
-                              )}
-                            </div>
-                          ))}
+                      <div key={item.id || idx} className="bg-card border rounded-lg p-3 flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">G{item.guestNumber}</span>
+                            <span className="font-medium">{menuItem?.name || item.name}</span>
+                          </div>
+                          {item.modifications && (
+                            <p className="text-xs text-muted-foreground mt-1">{item.modifications}</p>
+                          )}
+                          {item.sentToKitchen && (
+                            <Badge variant="secondary" className="mt-1 text-xs">Sent to Kitchen</Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">${item.price.toFixed(2)}</span>
+                          {!item.sentToKitchen && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveItem(item.id)}
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     );
-                  })}
-                  {currentOrder.items.length === 0 && (
-                    <p className="text-gray-500 dark:text-gray-400 text-center py-8">No items yet</p>
-                  )}
-                </div>
-
-                <div className="p-4 border-t border-gray-200 dark:border-slate-700">
-                  <button
-                    onClick={handleSendToKitchen}
-                    disabled={!currentOrder.items.some(item => !item.sentToKitchen && menuItems.find(m => m.id === item.menuItemId)?.category !== 'drinks')}
-                    className="w-full py-3 px-4 bg-server-primary text-white rounded-xl font-medium hover:bg-server-primary/90 transition-colors disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    <Send size={20} />
-                    Send to Kitchen
-                  </button>
+                  })
+                )}
+                <div className="border-t pt-3 mt-4">
+                  <div className="flex justify-between text-lg font-bold">
+                    <span>Total</span>
+                    <span>${(currentOrder.items || []).reduce((sum, item) => sum + item.price, 0).toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
+            )}
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="border-t bg-card px-4 py-3 shrink-0 safe-area-pb">
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setOrderViewMode(orderViewMode === 'menu' ? 'ordered' : 'menu')}
+                className="flex-1 h-12"
+              >
+                {orderViewMode === 'menu' ? `View Order (${(currentOrder.items || []).length})` : 'Back to Menu'}
+              </Button>
+              <Button
+                onClick={handleOpenSendConfirm}
+                disabled={!(currentOrder.items || []).some(item => !item.sentToKitchen && menuItems.find(m => m.id === item.menuItemId)?.category !== 'drinks')}
+                className="flex-1 h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold disabled:bg-slate-600 disabled:text-slate-400"
+              >
+                <Send className="w-5 h-5 mr-2" />
+                Send to Kitchen
+              </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Customization Modal */}
-      {showCustomizationModal && selectedMenuItem && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md shadow-xl">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Customize {selectedMenuItem.name}
-              </h2>
-              <button
-                onClick={() => {
-                  setShowCustomizationModal(false);
-                  setSelectedMenuItem(null);
-                  setCustomizations('');
-                  setCustomNotes('');
-                }}
-                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className="space-y-4 mb-6">
+      {/* Customization Modal with Modifiers */}
+      {showCustomizationModal && selectedMenuItem && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[110] p-0 sm:p-4">
+          <Card className="w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl animate-slide-in max-h-[90vh] flex flex-col">
+            <CardHeader className="border-b shrink-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>{editingOrderItem ? 'Edit' : ''} {selectedMenuItem.name}</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {editingOrderItem ? `Guest ${editingOrderItem.guestNumber}` : `Adding to Guest ${selectedGuest}`} · ${(selectedMenuItem.price + getModifierPrice()).toFixed(2)}
+                  </p>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => { setShowCustomizationModal(false); setSelectedMenuItem(null); setSelectedModifiers({}); setEditingOrderItem(null); }}>
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-4 space-y-4 overflow-y-auto flex-1">
+              {/* Modifiers */}
+              {(selectedMenuItem.modifiers || []).map(mod => (
+                <div key={mod.name}>
+                  <label className="text-sm font-medium mb-2 flex items-center gap-2">
+                    {mod.name}
+                    {mod.required && <Badge variant="destructive" className="text-xs">Required</Badge>}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {mod.options.map(option => {
+                      const isSelected = selectedModifiers[mod.name] === option.name;
+                      return (
+                        <button
+                          key={option.name}
+                          onClick={() => setSelectedModifiers(prev => ({ ...prev, [mod.name]: option.name }))}
+                          className={`p-3 rounded-lg text-sm font-medium transition-all text-left ${
+                            isSelected
+                              ? 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 ring-offset-background'
+                              : 'bg-muted hover:bg-muted/80 border border-border'
+                          }`}
+                        >
+                          <span>{option.name}</span>
+                          {option.price > 0 && (
+                            <span className="text-xs opacity-70 ml-1">+${option.price.toFixed(2)}</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+              
+              {/* Additional modifications */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Modifications / Customizations
-                </label>
-                <input
-                  type="text"
+                <label className="text-sm font-medium mb-2 block">Additional Modifications</label>
+                <Input
                   value={customizations}
                   onChange={(e) => setCustomizations(e.target.value)}
-                  placeholder="e.g., no onions, extra cheese, well done"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                  placeholder="e.g., no onions, extra cheese"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Custom Notes
-                </label>
-                <textarea
+                <label className="text-sm font-medium mb-2 block">Notes</label>
+                <Input
                   value={customNotes}
                   onChange={(e) => setCustomNotes(e.target.value)}
-                  placeholder="Additional notes for kitchen..."
-                  rows={3}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white resize-none"
+                  placeholder="Additional notes..."
                 />
               </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                Adding to Guest {selectedGuest}
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowCustomizationModal(false);
-                  setSelectedMenuItem(null);
-                  setCustomizations('');
-                  setCustomNotes('');
-                }}
-                className="flex-1 py-2 px-4 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmAddItem}
-                className="flex-1 py-2 px-4 bg-server-primary text-white rounded-xl hover:bg-server-primary/90 flex items-center justify-center gap-2"
-              >
-                <Plus size={18} />
-                Add to Order
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Sent Item Details Modal */}
-      {showSentItemModal && selectedSentItem && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md shadow-xl">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Item Details - {selectedSentItem.name}
-              </h2>
-              <button
-                onClick={() => {
-                  setShowSentItemModal(false);
-                  setSelectedSentItem(null);
-                }}
-                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className="space-y-4 mb-6">
-              <div>
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Guest</p>
-                <p className="text-lg text-gray-900 dark:text-white">Guest {selectedSentItem.guestNumber}</p>
-              </div>
-              {selectedSentItem.modifications && (
-                <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Modifications</p>
-                  <p className="text-gray-900 dark:text-white">{selectedSentItem.modifications}</p>
-                </div>
-              )}
-              {selectedSentItem.notes && (
-                <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Notes</p>
-                  <p className="text-gray-900 dark:text-white">{selectedSentItem.notes}</p>
-                </div>
-              )}
-              <div>
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Price</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">${selectedSentItem.price.toFixed(2)}</p>
-              </div>
-              <div className="pt-4 border-t border-gray-200 dark:border-slate-700">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  This item has been sent to the kitchen and cannot be modified.
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                setShowSentItemModal(false);
-                setSelectedSentItem(null);
-              }}
-              className="w-full py-2 px-4 bg-server-primary text-white rounded-xl hover:bg-server-primary/90"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Refill Modal */}
-      {showRefillModal && selectedRefillItem && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md shadow-xl">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Refill {selectedRefillItem.name}
-              </h2>
-              <button
-                onClick={() => {
-                  setShowRefillModal(false);
-                  setSelectedRefillItem(null);
-                }}
-                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className="space-y-4 mb-6">
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Original Order</span>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">${selectedRefillItem.price.toFixed(2)}</span>
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Guest {selectedRefillItem.guestNumber}
-                  {selectedRefillItem.modifications && (
-                    <span className="ml-2">• {selectedRefillItem.modifications}</span>
+            </CardContent>
+            <div className="p-4 border-t shrink-0">
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => { setShowCustomizationModal(false); setSelectedMenuItem(null); setSelectedModifiers({}); setEditingOrderItem(null); }} className="flex-1 h-12">
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={editingOrderItem ? handleUpdateItem : handleConfirmAddItem} 
+                  disabled={!canAddItem()}
+                  className="flex-1 h-12"
+                >
+                  {editingOrderItem ? (
+                    <>
+                      <Check className="w-5 h-5 mr-2" />
+                      Update
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-5 h-5 mr-2" />
+                      Add ${(selectedMenuItem.price + getModifierPrice()).toFixed(2)}
+                    </>
                   )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Refill Options
-                </label>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => {
-                      // Add refill with same specifications
-                      const menuItem = menuItems.find(m => m.id === selectedRefillItem.menuItemId);
-                      if (menuItem && currentOrder) {
-                        const refillItem = {
-                          id: `oi-${Date.now()}-${Math.random()}`,
-                          menuItemId: menuItem.id,
-                          name: menuItem.name,
-                          guestNumber: selectedRefillItem.guestNumber,
-                          modifications: selectedRefillItem.modifications,
-                          notes: selectedRefillItem.notes || 'Refill',
-                          price: menuItem.price,
-                          sentToKitchen: false
-                        };
-                        addItemToOrder(currentOrder.id, refillItem);
-                        setCurrentOrder({
-                          ...currentOrder,
-                          items: [...currentOrder.items, refillItem]
-                        });
-                        setShowRefillModal(false);
-                        setSelectedRefillItem(null);
-                      }
-                    }}
-                    className="w-full py-3 px-4 bg-server-primary text-white rounded-lg hover:bg-server-primary/90 transition-colors text-left"
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold">Same as Original</p>
-                        <p className="text-sm opacity-90">
-                          {selectedRefillItem.modifications || 'No modifications'}
-                        </p>
-                      </div>
-                      <span className="font-bold">${selectedRefillItem.price.toFixed(2)}</span>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => {
-                      // Open customization modal for refill
-                      const menuItem = menuItems.find(m => m.id === selectedRefillItem.menuItemId);
-                      if (menuItem) {
-                        setSelectedMenuItem(menuItem);
-                        setSelectedGuest(selectedRefillItem.guestNumber);
-                        setCustomizations('');
-                        setCustomNotes('Refill');
-                        setShowRefillModal(false);
-                        setSelectedRefillItem(null);
-                        setShowCustomizationModal(true);
-                      }
-                    }}
-                    className="w-full py-3 px-4 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors text-left"
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold">Customize Refill</p>
-                        <p className="text-sm opacity-75">Add modifications or notes</p>
-                      </div>
-                      <span className="font-bold">${selectedRefillItem.price.toFixed(2)}</span>
-                    </div>
-                  </button>
-                </div>
+                </Button>
               </div>
             </div>
+          </Card>
+        </div>,
+        document.body
+      )}
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowRefillModal(false);
-                  setSelectedRefillItem(null);
-                }}
-                className="flex-1 py-2 px-4 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600"
-              >
-                Cancel
-              </button>
+      {/* Send to Kitchen Confirmation Modal */}
+      {showSendConfirmModal && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[110] p-0 sm:p-4">
+          <Card className="w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl animate-slide-in max-h-[90vh] flex flex-col">
+            <CardHeader className="border-b shrink-0 bg-emerald-600 text-white rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-white">Confirm Order</CardTitle>
+                  <p className="text-sm text-white/80">Table {selectedTable?.number} · {itemsToSend.length} item(s)</p>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setShowSendConfirmModal(false)} className="text-white hover:bg-white/20">
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-4 space-y-4 overflow-y-auto flex-1">
+              <p className="text-sm text-muted-foreground">Review the order before sending to kitchen:</p>
+              
+              {/* Group items by guest */}
+              {Array.from({ length: selectedTable?.guestCount || 1 }, (_, i) => i + 1).map(guestNum => {
+                const guestItems = itemsToSend.filter(item => item.guestNumber === guestNum);
+                if (guestItems.length === 0) return null;
+                
+                return (
+                  <div key={guestNum} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-sm flex items-center gap-2">
+                        <span className="bg-primary/20 text-primary px-2 py-0.5 rounded">Guest {guestNum}</span>
+                      </h4>
+                      <button
+                        onClick={() => {
+                          setSelectedGuest(guestNum);
+                          setShowSendConfirmModal(false);
+                          setOrderViewMode('menu');
+                        }}
+                        className="text-xs text-primary hover:underline flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Add item
+                      </button>
+                    </div>
+                    
+                    {guestItems.map((item, idx) => (
+                      <div key={idx} className="bg-muted/50 border rounded-lg p-3">
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <span className="font-semibold">{item.name}</span>
+                            {item.modifications && (
+                              <p className="text-sm text-blue-600 dark:text-blue-400 mt-1 font-medium">→ {item.modifications}</p>
+                            )}
+                            {item.notes && (
+                              <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">Note: {item.notes}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditItemFromConfirm(item)}
+                              className="h-8 px-2 text-primary hover:text-primary"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                handleRemoveItem(item.id);
+                                setItemsToSend(prev => prev.filter(i => i.id !== item.id));
+                              }}
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+              
+              {itemsToSend.length === 0 && (
+                <p className="text-center text-muted-foreground py-4">No items to send</p>
+              )}
+            </CardContent>
+            <div className="p-4 border-t shrink-0">
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setShowSendConfirmModal(false)} className="flex-1 h-12">
+                  Go Back
+                </Button>
+                <Button 
+                  onClick={handleConfirmSendToKitchen}
+                  disabled={itemsToSend.length === 0}
+                  className="flex-1 h-12 bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  <Send className="w-5 h-5 mr-2" />
+                  Send to Kitchen
+                </Button>
+              </div>
             </div>
-          </div>
-        </div>
+          </Card>
+        </div>,
+        document.body
       )}
     </div>
   );

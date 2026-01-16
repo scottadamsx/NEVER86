@@ -7,13 +7,13 @@ import MessageCenter from '../MessageCenter';
 
 function Header() {
   const { currentUser, logout } = useAuth();
-  const { messages } = useData();
+  const { messages, getUnreadNotificationCount } = useData();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [messageCenterOpen, setMessageCenterOpen] = useState(false);
 
   // Calculate unread messages for current user (profile-specific)
-  const unreadCount = useMemo(() => {
+  const unreadMessageCount = useMemo(() => {
     return messages.filter(msg => {
       const matchesRole = msg.toRole === currentUser?.role;
       const matchesUser = msg.toUserId ? msg.toUserId === currentUser?.id : 
@@ -21,6 +21,12 @@ function Header() {
       return matchesRole && matchesUser && !msg.read;
     }).length;
   }, [messages, currentUser?.role, currentUser?.id]);
+
+  // Get unread notification count for current role
+  const unreadNotificationCount = getUnreadNotificationCount(currentUser?.role);
+  
+  // Total unread count (messages + notifications)
+  const unreadCount = unreadMessageCount + unreadNotificationCount;
 
   const handleLogout = () => {
     logout();

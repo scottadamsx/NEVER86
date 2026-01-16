@@ -1,13 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
-import { Printer, CreditCard, ArrowLeft, Users, Split, Share2, History } from 'lucide-react';
-import { formatTime, formatDateTime } from '../../utils/timeFormat';
+import { Printer, CreditCard, ArrowLeft, Users, Split, Share2 } from 'lucide-react';
+import { formatDateTime } from '../../utils/timeFormat';
 
 function ServerBillOut() {
   const { tableId } = useParams();
   const navigate = useNavigate();
-  const { tables, orders, closeOrder, clearTable, menuItems, getTableHistory, staff } = useData();
+  const { tables, orders, closeOrder, clearTable } = useData();
   const [tipAmount, setTipAmount] = useState('');
   const [selectedTipPercent, setSelectedTipPercent] = useState(null);
   const [billMode, setBillMode] = useState('single'); // 'single', 'byGuest', 'split', 'spread'
@@ -16,7 +16,6 @@ function ServerBillOut() {
 
   const table = tables.find(t => t.id === tableId);
   const order = orders.find(o => o.tableId === tableId && o.status === 'active');
-  const tableHistory = getTableHistory(tableId);
 
   if (!table || !order) {
     return (
@@ -119,47 +118,7 @@ function ServerBillOut() {
 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Bill Out - Table {table.number}</h1>
-        {tableHistory.length > 0 && (
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            {tableHistory.length} past {tableHistory.length === 1 ? 'order' : 'orders'}
-          </div>
-        )}
       </div>
-
-      {/* Past Orders for This Table */}
-      {tableHistory.length > 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <History className="text-gray-500 dark:text-gray-400" size={20} />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Past Orders</h2>
-          </div>
-          <div className="space-y-3 max-h-48 overflow-y-auto">
-            {tableHistory.slice().reverse().slice(0, 5).map((record) => {
-              const server = staff.find(s => s.id === record.serverId);
-              return (
-                <div key={record.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {formatDateTime(record.closedAt)}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {server?.displayName || 'Unknown'} • {record.guestCount} guests
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">
-                      ${record.totalSales.toFixed(2)}
-                    </p>
-                    <p className="text-xs text-green-600 dark:text-green-400">
-                      +${record.tip.toFixed(2)} tip
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Bill Mode Selection */}
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 mb-6">

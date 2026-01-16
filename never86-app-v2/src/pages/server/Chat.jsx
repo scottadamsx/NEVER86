@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { MessageSquare, Send, User, ChefHat, ClipboardList, AlertTriangle, Package, Search } from 'lucide-react';
+import { formatTime } from '../../utils/timeFormat';
 
 function ServerChat() {
   const { currentUser } = useAuth();
@@ -14,7 +15,7 @@ function ServerChat() {
   const messagesEndRef = useRef(null);
 
   const kitchenStaff = staff.filter(s => s.role === 'kitchen');
-  const otherServers = staff.filter(s => s.role === 'server' && s.id !== currentUser.id);
+  const otherServers = staff.filter(s => s.role === 'server' && s.id !== currentUser?.id);
   const managers = staff.filter(s => s.role === 'manager');
 
   const getRecipientInfoForChat = (chatId) => {

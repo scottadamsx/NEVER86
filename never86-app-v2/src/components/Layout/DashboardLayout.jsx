@@ -38,9 +38,9 @@ function DashboardLayout({ children }) {
         onMouseEnter={() => setSidebarExpanded(true)}
         onMouseLeave={() => setSidebarExpanded(false)}
       />
-      <div className={`transition-all duration-300 ${sidebarExpanded ? 'ml-56' : 'ml-16'}`}>
+      <div className={`transition-all duration-300 min-w-0 ${sidebarExpanded ? 'ml-56' : 'ml-16'}`}>
         <Header />
-        <main className="p-6">
+        <main className="p-4 overflow-x-auto">
           {children}
         </main>
       </div>

@@ -1,7 +1,8 @@
 {
-  "name": "never86-app-v1",
+  "name": "never86-app-v2",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.1.0",
+  "versionName": "Minimal",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,6 +14,7 @@
     "autoprefixer": "^10.4.23",
     "lucide-react": "^0.562.0",
     "postcss": "^8.5.6",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.12.0",

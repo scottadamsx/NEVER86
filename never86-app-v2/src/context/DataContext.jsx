@@ -1,14 +1,106 @@
+/**
+ * DATA CONTEXT
+ * 
+ * This is the CENTRAL STATE MANAGEMENT for the entire restaurant application.
+ * It manages ALL data: tables, orders, menu items, inventory, staff, etc.
+ * 
+ * WHAT IT DOES:
+ * - Stores all restaurant data in React state
+ * - Persists data to localStorage (so it survives page refreshes)
+ * - Provides functions to update data (seatTable, createOrder, etc.)
+ * - Handles data versioning (clears old data when structure changes)
+ * - Makes all data available to any component via useData() hook
+ * 
+ * DATA STRUCTURES MANAGED:
+ * - tables: Restaurant tables (status, section, current order, etc.)
+ * - menuItems: Menu items with prices, categories, modifiers
+ * - orders: Customer orders (items, status, totals, etc.)
+ * - chits: Kitchen tickets (orders sent to kitchen)
+ * - inventory: Stock levels for ingredients
+ * - staff: Staff members (servers, managers, kitchen)
+ * - messages: Chat messages between staff
+ * - tableHistory: Historical data about completed tables
+ * - storeHours: Restaurant operating hours
+ * - timeOffRequests: Staff time-off requests
+ * - staffAvailability: Staff availability schedules
+ * - notifications: System notifications
+ * 
+ * HOW TO USE:
+ * In any component:
+ *   const { tables, orders, seatTable, createOrder } = useData();
+ * 
+ * PERSISTENCE:
+ * - All data is saved to localStorage automatically
+ * - Data persists across page refreshes
+ * - When DATA_VERSION changes, old data is cleared and fresh mock data is loaded
+ * 
+ * IMPORTANT:
+ * This is a MOCK implementation - in production, this would connect to a real API/database.
+ * Currently, all data is stored in browser localStorage.
+ */
+
 import { createContext, useContext, useState, useEffect } from 'react';
 import { mockTables, mockMenuItems, mockInventory, mockStaff, mockOrders, mockChits, defaultMessages as mockDefaultMessages } from '../data/mockDataExtended';
 
 const DataContext = createContext();
 
+/**
+ * DATA_VERSION
+ * 
+ * Increment this number when the data structure changes.
+ * When the version changes, all old localStorage data is cleared
+ * and fresh mock data is loaded.
+ * 
+ * This prevents errors when data structures are updated.
+ */
+const DATA_VERSION = 2;
+
 // Use defaultMessages from mockDataExtended
 const defaultMessages = mockDefaultMessages;
 
-// Load data from localStorage or use defaults
+/**
+ * loadDataFromStorage Function
+ * 
+ * Loads all restaurant data from localStorage, or uses default mock data if:
+ * - localStorage is empty (first time user visits)
+ * - Data version has changed (structure updated)
+ * - Error occurs reading from localStorage
+ * 
+ * @returns {Object} Object containing all data: { tables, menuItems, inventory, staff, orders, chits, messages }
+ */
 const loadDataFromStorage = () => {
   try {
+    // STEP 1: Check if data version has changed
+    // If version changed, clear all old data and use fresh mock data
+    const savedVersion = localStorage.getItem('never86_data_version');
+    if (savedVersion !== String(DATA_VERSION)) {
+      console.log('Data version changed, refreshing with new mock data');
+      
+      // Clear all old data from localStorage
+      localStorage.removeItem('never86_tables');
+      localStorage.removeItem('never86_menuItems');
+      localStorage.removeItem('never86_inventory');
+      localStorage.removeItem('never86_staff');
+      localStorage.removeItem('never86_orders');
+      localStorage.removeItem('never86_chits');
+      localStorage.removeItem('never86_messages');
+      
+      // Save new version number
+      localStorage.setItem('never86_data_version', String(DATA_VERSION));
+      
+      // Return fresh mock data
+      return {
+        tables: mockTables,
+        menuItems: mockMenuItems,
+        inventory: mockInventory,
+        staff: mockStaff,
+        orders: mockOrders,
+        chits: mockChits,
+        messages: defaultMessages,
+      };
+    }
+
+    // STEP 2: Version matches - try to load saved data from localStorage
     const savedTables = localStorage.getItem('never86_tables');
     const savedMenuItems = localStorage.getItem('never86_menuItems');
     const savedInventory = localStorage.getItem('never86_inventory');
@@ -17,6 +109,7 @@ const loadDataFromStorage = () => {
     const savedChits = localStorage.getItem('never86_chits');
     const savedMessages = localStorage.getItem('never86_messages');
 
+    // Parse JSON strings back to objects, or use mock data if not found
     return {
       tables: savedTables ? JSON.parse(savedTables) : mockTables,
       menuItems: savedMenuItems ? JSON.parse(savedMenuItems) : mockMenuItems,
@@ -27,6 +120,7 @@ const loadDataFromStorage = () => {
       messages: savedMessages ? JSON.parse(savedMessages) : defaultMessages,
     };
   } catch (error) {
+    // STEP 3: If any error occurs (corrupted data, etc.), use fresh mock data
     console.error('Error loading data from localStorage:', error);
     return {
       tables: mockTables,
@@ -40,16 +134,38 @@ const loadDataFromStorage = () => {
   }
 };
 
+/**
+ * DataProvider Component
+ * 
+ * The main provider component that wraps the app and provides all restaurant data.
+ * 
+ * WHAT IT DOES:
+ * 1. Loads initial data from localStorage or mock data
+ * 2. Manages all state (tables, orders, menu, etc.)
+ * 3. Provides functions to update data (seatTable, createOrder, etc.)
+ * 4. Automatically saves data to localStorage when it changes
+ * 5. Makes everything available via useData() hook
+ * 
+ * @param {Object} props
+ * @param {ReactNode} props.children - All child components
+ */
 export function DataProvider({ children }) {
+  // Load initial data (from localStorage or mock data)
   const initialData = loadDataFromStorage();
 
-  const [tables, setTables] = useState(initialData.tables);
-  const [menuItems, setMenuItems] = useState(initialData.menuItems);
-  const [inventory, setInventory] = useState(initialData.inventory);
-  const [staff, setStaff] = useState(initialData.staff);
-  const [orders, setOrders] = useState(initialData.orders);
-  const [chits, setChits] = useState(initialData.chits);
-  const [messages, setMessages] = useState(initialData.messages);
+  // ============================================
+  // STATE MANAGEMENT
+  // ============================================
+  // All restaurant data is stored in React state
+  // When these change, components that use them will automatically re-render
+  
+  const [tables, setTables] = useState(initialData.tables);           // Restaurant tables
+  const [menuItems, setMenuItems] = useState(initialData.menuItems); // Menu items
+  const [inventory, setInventory] = useState(initialData.inventory); // Inventory stock
+  const [staff, setStaff] = useState(initialData.staff);             // Staff members
+  const [orders, setOrders] = useState(initialData.orders);          // Customer orders
+  const [chits, setChits] = useState(initialData.chits);              // Kitchen tickets
+  const [messages, setMessages] = useState(initialData.messages);    // Chat messages
   
   // Load table history from localStorage or initialize from completed orders
   const loadTableHistory = () => {
@@ -121,10 +237,114 @@ export function DataProvider({ children }) {
   
   const [tableHistory, setTableHistory] = useState(loadTableHistory());
 
-  // Optimized: Batch localStorage writes with debouncing
+  // Store hours state
+  const [storeHours, setStoreHours] = useState(() => {
+    try {
+      const saved = localStorage.getItem('never86_storeHours');
+      return saved ? JSON.parse(saved) : {
+        monday: { open: '11:00', close: '22:00', closed: false },
+        tuesday: { open: '11:00', close: '22:00', closed: false },
+        wednesday: { open: '11:00', close: '22:00', closed: false },
+        thursday: { open: '11:00', close: '22:00', closed: false },
+        friday: { open: '11:00', close: '23:00', closed: false },
+        saturday: { open: '10:00', close: '23:00', closed: false },
+        sunday: { open: '10:00', close: '21:00', closed: false }
+      };
+    } catch { return {}; }
+  });
+
+  // Time off requests state
+  const [timeOffRequests, setTimeOffRequests] = useState(() => {
+    try {
+      const saved = localStorage.getItem('never86_timeOffRequests');
+      return saved ? JSON.parse(saved) : [
+        { id: 'tor-1', staffId: 'staff-3', startDate: '2026-01-20', endDate: '2026-01-22', reason: 'Family vacation', status: 'pending', createdAt: '2026-01-10' },
+        { id: 'tor-2', staffId: 'staff-4', startDate: '2026-01-25', endDate: '2026-01-25', reason: 'Doctor appointment', status: 'pending', createdAt: '2026-01-12' }
+      ];
+    } catch { return []; }
+  });
+
+  // Staff availability state
+  const [staffAvailability, setStaffAvailability] = useState(() => {
+    try {
+      const saved = localStorage.getItem('never86_staffAvailability');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  // Notifications state - cross-portal notifications
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const saved = localStorage.getItem('never86_notifications');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  // Save notifications to localStorage
+  useEffect(() => {
+    localStorage.setItem('never86_notifications', JSON.stringify(notifications));
+  }, [notifications]);
+
+  // Add a notification
+  const addNotification = (notification) => {
+    const newNotification = {
+      id: `notif-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      read: false,
+      ...notification
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+    return newNotification;
+  };
+
+  // Mark notification as read
+  const markNotificationAsRead = (notificationId) => {
+    setNotifications(prev => prev.map(n => 
+      n.id === notificationId ? { ...n, read: true } : n
+    ));
+  };
+
+  // Mark all notifications as read for a specific role/user
+  const markAllNotificationsAsRead = (forRole) => {
+    setNotifications(prev => prev.map(n => 
+      n.forRole === forRole ? { ...n, read: true } : n
+    ));
+  };
+
+  // Get notifications for a specific role
+  const getNotificationsForRole = (role) => {
+    return notifications.filter(n => n.forRole === role || n.forRole === 'all');
+  };
+
+  // Get unread count for a role
+  const getUnreadNotificationCount = (role) => {
+    return notifications.filter(n => (n.forRole === role || n.forRole === 'all') && !n.read).length;
+  };
+
+  // Get unread message count for a user
+  const getUnreadMessageCount = (userId) => {
+    return messages.filter(m => m.to === userId && !m.read).length;
+  };
+
+  /**
+   * AUTO-SAVE TO LOCALSTORAGE
+   * 
+   * This useEffect automatically saves all data to localStorage whenever it changes.
+   * 
+   * OPTIMIZATION: Uses debouncing (300ms delay) to avoid saving on every keystroke.
+   * Instead, it waits 300ms after the last change, then saves once.
+   * This improves performance by reducing localStorage writes.
+   * 
+   * HOW IT WORKS:
+   * 1. When any data changes (tables, orders, etc.), this effect runs
+   * 2. It sets a 300ms timer
+   * 3. If data changes again within 300ms, the timer resets
+   * 4. After 300ms of no changes, it saves everything to localStorage
+   */
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       try {
+        // Save all data to localStorage as JSON strings
         localStorage.setItem('never86_tables', JSON.stringify(tables));
         localStorage.setItem('never86_menuItems', JSON.stringify(menuItems));
         localStorage.setItem('never86_inventory', JSON.stringify(inventory));
@@ -132,13 +352,17 @@ export function DataProvider({ children }) {
         localStorage.setItem('never86_orders', JSON.stringify(orders));
         localStorage.setItem('never86_chits', JSON.stringify(chits));
         localStorage.setItem('never86_messages', JSON.stringify(messages));
+        localStorage.setItem('never86_storeHours', JSON.stringify(storeHours));
+        localStorage.setItem('never86_timeOffRequests', JSON.stringify(timeOffRequests));
+        localStorage.setItem('never86_staffAvailability', JSON.stringify(staffAvailability));
       } catch (error) {
         console.error('Error saving to localStorage:', error);
       }
-    }, 300); // Debounce: wait 300ms after last change
+    }, 300); // Debounce: wait 300ms after last change before saving
 
+    // Cleanup: Cancel the timer if data changes again before 300ms
     return () => clearTimeout(timeoutId);
-  }, [tables, menuItems, inventory, staff, orders, chits, messages]);
+  }, [tables, menuItems, inventory, staff, orders, chits, messages, storeHours, timeOffRequests, staffAvailability]);
 
   // Function to reload mock data
   const reloadMockData = () => {
@@ -250,19 +474,38 @@ export function DataProvider({ children }) {
   };
 
   // Table functions
+  /**
+   * seatTable Function
+   * 
+   * Marks a table as occupied when guests are seated.
+   * 
+   * @param {string} tableId - The ID of the table to seat
+   * @param {number} guestCount - Number of guests at the table
+   * @param {string} serverId - ID of the server assigned to this table
+   */
   const seatTable = (tableId, guestCount, serverId) => {
     setTables(prev => prev.map(table =>
+      // Find the table by ID and update its status
       table.id === tableId
         ? { ...table, status: 'occupied', guestCount, serverId, seatedAt: new Date().toISOString() }
-        : table
+        : table  // Keep other tables unchanged
     ));
   };
 
+  /**
+   * clearTable Function
+   * 
+   * Marks a table as available after guests leave.
+   * Resets all table data (guest count, server, order, etc.)
+   * 
+   * @param {string} tableId - The ID of the table to clear
+   */
   const clearTable = (tableId) => {
     setTables(prev => prev.map(table =>
+      // Find the table by ID and reset it to available
       table.id === tableId
         ? { ...table, status: 'available', guestCount: 0, serverId: null, seatedAt: null, currentOrderId: null }
-        : table
+        : table  // Keep other tables unchanged
     ));
   };
 
@@ -275,43 +518,88 @@ export function DataProvider({ children }) {
   };
 
   // Order functions
+  /**
+   * createOrder Function
+   * 
+   * Creates a new order for a table.
+   * 
+   * @param {string} tableId - The table this order is for
+   * @param {string} serverId - The server taking the order
+   * @param {number} guestCount - Number of guests at the table
+   * @returns {Object} The newly created order object
+   */
   const createOrder = (tableId, serverId, guestCount) => {
+    // Create new order object
     const newOrder = {
-      id: `order-${Date.now()}`,
+      id: `order-${Date.now()}`,  // Unique ID based on timestamp
       tableId,
       serverId,
       guestCount,
-      status: 'active',
-      items: [],
+      status: 'active',  // Order is active (not completed)
+      items: [],  // Start with empty items array
       createdAt: new Date().toISOString(),
-      closedAt: null,
-      tip: 0
+      closedAt: null,  // Will be set when order is completed
+      tip: 0  // No tip yet
     };
+    
+    // Add new order to orders array
     setOrders(prev => [...prev, newOrder]);
+    
+    // Link the order to the table
     setTables(prev => prev.map(table =>
       table.id === tableId
         ? { ...table, currentOrderId: newOrder.id }
         : table
     ));
+    
     return newOrder;
   };
 
+  /**
+   * addItemToOrder Function
+   * 
+   * Adds a menu item to an existing order.
+   * 
+   * @param {string} orderId - The order to add the item to
+   * @param {Object} item - The menu item object to add
+   */
   const addItemToOrder = (orderId, item) => {
     setOrders(prev => prev.map(order =>
+      // Find the order and add the new item to its items array
       order.id === orderId
         ? { ...order, items: [...order.items, item] }
-        : order
+        : order  // Keep other orders unchanged
     ));
   };
 
+  /**
+   * removeItemFromOrder Function
+   * 
+   * Removes an item from an order (before it's sent to kitchen).
+   * 
+   * @param {string} orderId - The order to remove the item from
+   * @param {string} itemId - The ID of the item to remove
+   */
   const removeItemFromOrder = (orderId, itemId) => {
     setOrders(prev => prev.map(order =>
+      // Find the order and filter out the item
       order.id === orderId
         ? { ...order, items: order.items.filter(item => item.id !== itemId) }
-        : order
+        : order  // Keep other orders unchanged
     ));
   };
 
+  /**
+   * sendToKitchen Function
+   * 
+   * Sends items from an order to the kitchen (creates a "chit").
+   * This is what servers do when they're ready to send food items to be cooked.
+   * 
+   * @param {string} orderId - The order these items belong to
+   * @param {Array} items - Array of order items to send to kitchen
+   * @param {number} tableNumber - The table number (for display in kitchen)
+   * @param {string} serverName - Name of the server (for display in kitchen)
+   */
   const sendToKitchen = (orderId, items, tableNumber, serverName) => {
     const newChit = {
       id: `chit-${Date.now()}`,
@@ -510,6 +798,66 @@ export function DataProvider({ children }) {
     ));
   };
 
+  // Store hours functions
+  const updateStoreHours = (newHours) => {
+    setStoreHours(newHours);
+  };
+
+  // Time off request functions
+  const addTimeOffRequest = (request, staffName) => {
+    const newRequest = {
+      ...request,
+      id: `tor-${Date.now()}`,
+      status: 'pending',
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    setTimeOffRequests(prev => [...prev, newRequest]);
+    
+    // Create notification for managers
+    addNotification({
+      type: 'time_off_request',
+      forRole: 'manager',
+      title: 'Time Off Request',
+      message: `${staffName || 'A staff member'} has requested time off from ${new Date(request.startDate).toLocaleDateString()} to ${new Date(request.endDate).toLocaleDateString()}`,
+      link: '/manager/schedule',
+      relatedId: newRequest.id
+    });
+    
+    return newRequest;
+  };
+
+  const updateTimeOffRequest = (requestId, status) => {
+    setTimeOffRequests(prev => prev.map(req =>
+      req.id === requestId
+        ? { ...req, status, updatedAt: new Date().toISOString() }
+        : req
+    ));
+  };
+
+  const getTimeOffRequestsByStaff = (staffId) => {
+    return timeOffRequests.filter(req => req.staffId === staffId);
+  };
+
+  // Staff availability functions
+  const updateStaffAvailability = (staffId, availability) => {
+    setStaffAvailability(prev => ({
+      ...prev,
+      [staffId]: availability
+    }));
+  };
+
+  const getStaffAvailability = (staffId) => {
+    return staffAvailability[staffId] || {
+      monday: { available: true, preferredShift: 'any' },
+      tuesday: { available: true, preferredShift: 'any' },
+      wednesday: { available: true, preferredShift: 'any' },
+      thursday: { available: true, preferredShift: 'any' },
+      friday: { available: true, preferredShift: 'any' },
+      saturday: { available: true, preferredShift: 'any' },
+      sunday: { available: true, preferredShift: 'any' }
+    };
+  };
+
   // Getters
   const getTablesBySection = (section) => tables.filter(t => t.section === section);
   const getTablesByServer = (serverId) => tables.filter(t => t.serverId === serverId);
@@ -581,6 +929,26 @@ export function DataProvider({ children }) {
       // Staff functions
       addStaffMember,
       updateStaffMember,
+      // Store hours
+      storeHours,
+      updateStoreHours,
+      // Time off requests
+      timeOffRequests,
+      addTimeOffRequest,
+      updateTimeOffRequest,
+      getTimeOffRequestsByStaff,
+      // Staff availability
+      staffAvailability,
+      updateStaffAvailability,
+      getStaffAvailability,
+      // Notifications
+      notifications,
+      addNotification,
+      markNotificationAsRead,
+      markAllNotificationsAsRead,
+      getNotificationsForRole,
+      getUnreadNotificationCount,
+      getUnreadMessageCount,
       // Getters
       getTablesBySection,
       getTablesByServer,

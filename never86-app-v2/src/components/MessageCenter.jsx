@@ -1,13 +1,14 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, MessageSquare, ChefHat, AlertTriangle, UserPlus } from 'lucide-react';
+import { X, MessageSquare, ChefHat, AlertTriangle, UserPlus, Calendar, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
+import { formatTime } from '../utils/timeFormat';
 
 function MessageCenter({ isOpen, onClose }) {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { messages, markMessageAsRead, markAllMessagesAsRead } = useData();
+  const { messages, markMessageAsRead, markAllMessagesAsRead, notifications, markNotificationAsRead, markAllNotificationsAsRead } = useData();
   const [selectedFilter, setSelectedFilter] = useState('all');
 
   // Filter messages for current user (profile-specific)
@@ -21,33 +22,66 @@ function MessageCenter({ isOpen, onClose }) {
     }).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   }, [messages, currentUser?.role, currentUser?.id]);
 
+  // Filter notifications for current user's role
+  const myNotifications = useMemo(() => {
+    return notifications.filter(n => 
+      (n.forRole === currentUser?.role || n.forRole === 'all') && !n.read
+    ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }, [notifications, currentUser?.role]);
+
+  // Combined items (messages + notifications)
+  const allItems = useMemo(() => {
+    const msgItems = myMessages.map(m => ({ ...m, itemType: 'message' }));
+    const notifItems = myNotifications.map(n => ({ ...n, itemType: 'notification', timestamp: n.createdAt }));
+    return [...msgItems, ...notifItems].sort((a, b) => 
+      new Date(b.timestamp || b.createdAt) - new Date(a.timestamp || a.createdAt)
+    );
+  }, [myMessages, myNotifications]);
+
   // Group messages by type
   const messagesByType = useMemo(() => {
     return {
-      all: myMessages,
+      all: allItems,
       chat: myMessages.filter(m => m.type === 'chat'),
       '86-request': myMessages.filter(m => m.type === '86-request'),
-      'server-request': myMessages.filter(m => m.type === 'server-request')
+      'server-request': myMessages.filter(m => m.type === 'server-request'),
+      notifications: myNotifications
     };
-  }, [myMessages]);
+  }, [allItems, myMessages, myNotifications]);
 
-  const handleMessageClick = (message) => {
-    markMessageAsRead(message.id);
-    // Navigate to appropriate page based on message type
-    if (message.type === 'chat') {
-      navigate(`/${currentUser?.role}/chat`);
-    } else if (message.type === '86-request') {
-      navigate(`/${currentUser?.role}/menu`);
+  const handleMessageClick = (item) => {
+    if (item.itemType === 'notification') {
+      markNotificationAsRead(item.id);
+      if (item.link) {
+        navigate(item.link);
+      }
+    } else {
+      markMessageAsRead(item.id);
+      // Navigate to appropriate page based on message type
+      if (item.type === 'chat') {
+        navigate(`/${currentUser?.role}/chat`);
+      } else if (item.type === '86-request') {
+        navigate(`/${currentUser?.role}/menu`);
+      }
     }
     onClose();
   };
 
   const handleMarkAllRead = () => {
     markAllMessagesAsRead(currentUser?.role, currentUser?.id);
+    markAllNotificationsAsRead(currentUser?.role);
   };
 
-  const getMessageIcon = (type) => {
-    switch (type) {
+  const getMessageIcon = (item) => {
+    if (item.itemType === 'notification') {
+      switch (item.type) {
+        case 'time_off_request':
+          return <Calendar className="text-purple-600" size={20} />;
+        default:
+          return <Bell className="text-blue-600" size={20} />;
+      }
+    }
+    switch (item.type) {
       case '86-request':
         return <AlertTriangle className="text-orange-600" size={20} />;
       case 'server-request':
@@ -58,8 +92,11 @@ function MessageCenter({ isOpen, onClose }) {
     }
   };
 
-  const getMessageTypeLabel = (type) => {
-    switch (type) {
+  const getMessageTypeLabel = (item) => {
+    if (item.itemType === 'notification') {
+      return item.title || 'Notification';
+    }
+    switch (item.type) {
       case '86-request':
         return '86 Request';
       case 'server-request':
@@ -116,6 +153,16 @@ function MessageCenter({ isOpen, onClose }) {
             All ({messagesByType.all.length})
           </button>
           <button
+            onClick={() => setSelectedFilter('notifications')}
+            className={`px-3 py-1 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              selectedFilter === 'notifications'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200'
+            }`}
+          >
+            Alerts ({messagesByType.notifications.length})
+          </button>
+          <button
             onClick={() => setSelectedFilter('chat')}
             className={`px-3 py-1 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
               selectedFilter === 'chat'
@@ -141,28 +188,32 @@ function MessageCenter({ isOpen, onClose }) {
         <div className="flex-1 overflow-y-auto p-3">
           {messagesByType[selectedFilter].length > 0 ? (
             <div className="space-y-2">
-              {messagesByType[selectedFilter].map(message => (
+              {messagesByType[selectedFilter].map(item => (
                 <button
-                  key={message.id}
-                  onClick={() => handleMessageClick(message)}
-                  className="w-full text-left p-3 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg border-l-4 border-blue-500 transition-colors"
+                  key={item.id}
+                  onClick={() => handleMessageClick(item)}
+                  className={`w-full text-left p-3 rounded-lg border-l-4 transition-colors ${
+                    item.itemType === 'notification' 
+                      ? 'bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 border-purple-500'
+                      : 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 border-blue-500'
+                  }`}
                 >
                   <div className="flex items-start gap-3">
-                    {getMessageIcon(message.type)}
+                    {getMessageIcon(item)}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                          {message.fromName}
+                          {item.itemType === 'notification' ? item.title : item.fromName}
                         </span>
                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {formatTime(message.timestamp)}
+                          {formatTime(item.timestamp || item.createdAt)}
                         </span>
                       </div>
-                      <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">
-                        {getMessageTypeLabel(message.type)}
+                      <p className={`text-xs mb-1 ${item.itemType === 'notification' ? 'text-purple-600 dark:text-purple-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                        {getMessageTypeLabel(item)}
                       </p>
                       <p className="text-sm text-gray-700 dark:text-gray-300 truncate">
-                        {message.text}
+                        {item.itemType === 'notification' ? item.message : item.text}
                       </p>
                     </div>
                   </div>
@@ -171,9 +222,9 @@ function MessageCenter({ isOpen, onClose }) {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12">
-              <MessageSquare className="text-gray-300 dark:text-slate-600 mb-3" size={48} />
+              <Bell className="text-gray-300 dark:text-slate-600 mb-3" size={48} />
               <p className="text-gray-500 dark:text-gray-400 text-center">
-                No {selectedFilter !== 'all' ? selectedFilter : ''} messages
+                No {selectedFilter !== 'all' ? selectedFilter : ''} notifications
               </p>
             </div>
           )}

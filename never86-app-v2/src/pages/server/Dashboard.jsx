@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { UtensilsCrossed, DollarSign, TrendingUp, AlertCircle, CheckCircle, X, Users } from 'lucide-react';
 import { formatTimeElapsed } from '../../utils/timeFormat';
+import { serverPerformance } from '../../data/generatedHistoricalData';
 
 function ServerDashboard() {
   const navigate = useNavigate();
@@ -33,43 +34,59 @@ function ServerDashboard() {
   const myTables = useMemo(() => tables.filter(t => t.section === mySection), [tables, mySection]);
   const activeTables = useMemo(() => myTables.filter(t => t.status === 'occupied'), [myTables]);
   
-  // Calculate real sales from orders - memoized to update when orders change
+  // Calculate real sales from orders and historical data
   const stats = useMemo(() => {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
+    const todayStr = todayStart.toISOString().split('T')[0];
     
-    // Filter orders for today that belong to this server
+    // Get historical performance for today (or most recent day)
+    const todayPerf = serverPerformance.find(p => 
+      p.serverId === currentUser?.id && p.date === todayStr
+    );
+    
+    // If we have historical data for today, use it
+    if (todayPerf) {
+      return {
+        todaySales: todayPerf.totalSales,
+        totalTips: todayPerf.totalTips,
+        avgTip: todayPerf.totalSales > 0 ? Math.round((todayPerf.totalTips / todayPerf.totalSales) * 100) : 0,
+        takehome: todayPerf.totalTips
+      };
+    }
+    
+    // Otherwise, get the most recent historical data for this server
+    const recentPerf = serverPerformance
+      .filter(p => p.serverId === currentUser?.id)
+      .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    
+    if (recentPerf) {
+      return {
+        todaySales: recentPerf.totalSales,
+        totalTips: recentPerf.totalTips,
+        avgTip: recentPerf.totalSales > 0 ? Math.round((recentPerf.totalTips / recentPerf.totalSales) * 100) : 0,
+        takehome: recentPerf.totalTips
+      };
+    }
+    
+    // Fallback to current session orders
     const myOrders = orders.filter(o => {
       const orderDate = new Date(o.createdAt);
       const isMyOrder = o.serverId === currentUser?.id || myTables.some(t => t.id === o.tableId);
       return orderDate >= todayStart && isMyOrder;
     });
     
-    // Only include completed orders for sales (billed out tables)
     const completedOrders = myOrders.filter(o => o.status === 'completed');
-    
-    // Calculate sales from completed orders only
     const todaySales = completedOrders.reduce((sum, order) => {
       return sum + order.items.reduce((itemSum, item) => itemSum + item.price, 0);
     }, 0);
-    
-    // Calculate tips from completed orders
     const totalTips = completedOrders.reduce((sum, order) => sum + (order.tip || 0), 0);
+    const avgTip = todaySales > 0 ? Math.round((totalTips / todaySales) * 100) : 0;
     
-    // Calculate sales from completed orders for tip percentage calculation
-    const salesFromCompleted = completedOrders.reduce((sum, order) => {
-      return sum + order.items.reduce((itemSum, item) => itemSum + item.price, 0);
-    }, 0);
-    
-    const avgTip = salesFromCompleted > 0 ? Math.round((totalTips / salesFromCompleted) * 100) : 0;
-    
-    // Takehome is the tips earned (this is what the server takes home)
-    const takehome = totalTips;
-    
-    return { todaySales, totalTips, avgTip, takehome, completedOrders };
+    return { todaySales, totalTips, avgTip, takehome: totalTips };
   }, [orders, currentUser?.id, myTables]);
   
-  const { todaySales, totalTips, avgTip, takehome } = stats;
+  const { todaySales = 0, totalTips = 0, avgTip = 0, takehome = 0 } = stats || {};
 
   // Get tables needing attention (ready chits that haven't been run)
   const readyChits = chits.filter(c => c.status === 'ready' && !c.run);

@@ -15,16 +15,17 @@ const random = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const randomItem = (arr) => arr[random(0, arr.length - 1)];
 
 // 8 Servers with proper names
+// Server usernames: first initial + lastname + random 4 digit number
 export const mockStaff = [
-  { id: 'staff-1', username: 'manager', role: 'manager', displayName: 'Sarah Johnson', section: null, station: null, status: 'active', createdAt: '2024-01-15' },
-  { id: 'staff-2', username: 'maria', role: 'server', displayName: 'Maria Rodriguez', section: 'A', station: null, status: 'active', createdAt: '2024-03-15' },
-  { id: 'staff-3', username: 'jake', role: 'server', displayName: 'Jake Thompson', section: 'A', station: null, status: 'active', createdAt: '2024-02-20' },
-  { id: 'staff-4', username: 'sophie', role: 'server', displayName: 'Sophie Chen', section: 'B', station: null, status: 'active', createdAt: '2024-01-10' },
-  { id: 'staff-5', username: 'michael', role: 'server', displayName: 'Michael Brown', section: 'B', station: null, status: 'active', createdAt: '2024-02-05' },
-  { id: 'staff-6', username: 'emily', role: 'server', displayName: 'Emily Davis', section: 'C', station: null, status: 'active', createdAt: '2024-01-20' },
-  { id: 'staff-7', username: 'david', role: 'server', displayName: 'David Wilson', section: 'C', station: null, status: 'active', createdAt: '2024-02-15' },
-  { id: 'staff-8', username: 'olivia', role: 'server', displayName: 'Olivia Martinez', section: 'A', station: null, status: 'active', createdAt: '2024-03-01' },
-  { id: 'staff-9', username: 'chef', role: 'kitchen', displayName: 'Chef Anderson', section: null, station: 'grill', status: 'active', createdAt: '2024-01-10' },
+  { id: 'staff-1', username: 'manager949', role: 'manager', displayName: 'Sarah Johnson', section: null, station: null, status: 'active', createdAt: '2024-01-15' },
+  { id: 'staff-2', username: 'mrodriguez2847', role: 'server', displayName: 'Maria Rodriguez', section: 'A', station: null, status: 'active', createdAt: '2024-03-15' },
+  { id: 'staff-3', username: 'jthompson5921', role: 'server', displayName: 'Jake Thompson', section: 'A', station: null, status: 'active', createdAt: '2024-02-20' },
+  { id: 'staff-4', username: 'schen7364', role: 'server', displayName: 'Sophie Chen', section: 'B', station: null, status: 'active', createdAt: '2024-01-10' },
+  { id: 'staff-5', username: 'mbrown4189', role: 'server', displayName: 'Michael Brown', section: 'B', station: null, status: 'active', createdAt: '2024-02-05' },
+  { id: 'staff-6', username: 'edavis8523', role: 'server', displayName: 'Emily Davis', section: 'C', station: null, status: 'active', createdAt: '2024-01-20' },
+  { id: 'staff-7', username: 'dwilson1647', role: 'server', displayName: 'David Wilson', section: 'C', station: null, status: 'active', createdAt: '2024-02-15' },
+  { id: 'staff-8', username: 'omartinez9032', role: 'server', displayName: 'Olivia Martinez', section: 'A', station: null, status: 'active', createdAt: '2024-03-01' },
+  { id: 'staff-9', username: 'chef949', role: 'kitchen', displayName: 'Chef Anderson', section: null, station: 'grill', status: 'active', createdAt: '2024-01-10' },
 ];
 
 // Tables
@@ -51,25 +52,166 @@ export const mockTables = [
   { id: 't20', number: 20, seats: 6, section: 'B', status: 'available', serverId: null, guestCount: 0, seatedAt: null, currentOrderId: null },
 ];
 
-// Menu Items
+// Menu Items with modifiers
+// modifiers: array of modifier groups
+// Each modifier group: { name, required, options: [{ name, price }] }
 export const mockMenuItems = [
-  { id: 'menu-1', name: 'Ribeye Steak', description: '12oz aged ribeye with herb butter', price: 42.00, category: 'mains', prepTime: 18, onMenu: true, available: true },
-  { id: 'menu-2', name: 'Grilled Salmon', description: 'Atlantic salmon with lemon dill sauce', price: 36.00, category: 'mains', prepTime: 15, onMenu: true, available: true },
-  { id: 'menu-3', name: 'Chicken Parmesan', description: 'Breaded chicken breast with marinara', price: 28.00, category: 'mains', prepTime: 16, onMenu: true, available: true },
-  { id: 'menu-4', name: 'Pasta Primavera', description: 'Seasonal vegetables in garlic cream sauce', price: 24.00, category: 'mains', prepTime: 12, onMenu: true, available: true },
-  { id: 'menu-5', name: 'Caesar Salad', description: 'Romaine, parmesan, croutons, caesar dressing', price: 14.00, category: 'appetizers', prepTime: 5, onMenu: true, available: true },
-  { id: 'menu-6', name: 'Soup of the Day', description: 'Ask your server for today\'s selection', price: 9.00, category: 'appetizers', prepTime: 3, onMenu: true, available: true },
-  { id: 'menu-7', name: 'Calamari', description: 'Crispy fried calamari with marinara', price: 16.00, category: 'appetizers', prepTime: 8, onMenu: true, available: true },
-  { id: 'menu-8', name: 'Bruschetta', description: 'Toasted bread with tomato basil topping', price: 12.00, category: 'appetizers', prepTime: 6, onMenu: true, available: true },
-  { id: 'menu-9', name: 'Chocolate Cake', description: 'Rich chocolate layer cake', price: 12.00, category: 'desserts', prepTime: 5, onMenu: true, available: false },
-  { id: 'menu-10', name: 'Tiramisu', description: 'Classic Italian coffee dessert', price: 11.00, category: 'desserts', prepTime: 5, onMenu: true, available: true },
-  { id: 'menu-11', name: 'House Red Wine', description: 'Glass of house cabernet', price: 12.00, category: 'drinks', prepTime: 1, onMenu: true, available: true },
-  { id: 'menu-12', name: 'House White Wine', description: 'Glass of house chardonnay', price: 12.00, category: 'drinks', prepTime: 1, onMenu: true, available: true },
-  { id: 'menu-13', name: 'Draft Beer', description: 'Ask for today\'s selections', price: 8.00, category: 'drinks', prepTime: 1, onMenu: true, available: true },
-  { id: 'menu-14', name: 'Soft Drinks', description: 'Coke, Sprite, Ginger Ale', price: 4.00, category: 'drinks', prepTime: 1, onMenu: true, available: true },
-  { id: 'menu-15', name: 'Garlic Mashed Potatoes', description: 'Creamy mashed potatoes with roasted garlic', price: 8.00, category: 'sides', prepTime: 5, onMenu: true, available: true },
-  { id: 'menu-16', name: 'Seasonal Vegetables', description: 'Chef\'s selection of grilled vegetables', price: 7.00, category: 'sides', prepTime: 6, onMenu: true, available: true },
-  { id: 'menu-17', name: 'French Fries', description: 'Crispy hand-cut fries', price: 6.00, category: 'sides', prepTime: 7, onMenu: true, available: true },
+  { 
+    id: 'menu-1', 
+    name: 'Ribeye Steak', 
+    description: '12oz aged ribeye with herb butter', 
+    price: 42.00, 
+    category: 'mains', 
+    prepTime: 18, 
+    onMenu: true, 
+    available: true,
+    modifiers: [
+      { 
+        name: 'Temperature', 
+        required: true, 
+        options: [
+          { name: 'Rare', price: 0 },
+          { name: 'Medium Rare', price: 0 },
+          { name: 'Medium', price: 0 },
+          { name: 'Medium Well', price: 0 },
+          { name: 'Well Done', price: 0 }
+        ]
+      },
+      {
+        name: 'Side',
+        required: false,
+        options: [
+          { name: 'No Side', price: 0 },
+          { name: 'Mashed Potatoes', price: 0 },
+          { name: 'Fries', price: 0 },
+          { name: 'Vegetables', price: 0 }
+        ]
+      }
+    ]
+  },
+  { 
+    id: 'menu-2', 
+    name: 'Grilled Salmon', 
+    description: 'Atlantic salmon with lemon dill sauce', 
+    price: 36.00, 
+    category: 'mains', 
+    prepTime: 15, 
+    onMenu: true, 
+    available: true,
+    modifiers: [
+      {
+        name: 'Preparation',
+        required: true,
+        options: [
+          { name: 'Grilled', price: 0 },
+          { name: 'Pan Seared', price: 0 },
+          { name: 'Blackened', price: 0 }
+        ]
+      }
+    ]
+  },
+  { id: 'menu-3', name: 'Chicken Parmesan', description: 'Breaded chicken breast with marinara', price: 28.00, category: 'mains', prepTime: 16, onMenu: true, available: true, modifiers: [] },
+  { id: 'menu-4', name: 'Pasta Primavera', description: 'Seasonal vegetables in garlic cream sauce', price: 24.00, category: 'mains', prepTime: 12, onMenu: true, available: true, modifiers: [] },
+  { 
+    id: 'menu-5', 
+    name: 'Caesar Salad', 
+    description: 'Romaine, parmesan, croutons, caesar dressing', 
+    price: 14.00, 
+    category: 'appetizers', 
+    prepTime: 5, 
+    onMenu: true, 
+    available: true,
+    modifiers: [
+      {
+        name: 'Add Protein',
+        required: false,
+        options: [
+          { name: 'No Protein', price: 0 },
+          { name: 'Grilled Chicken', price: 6 },
+          { name: 'Grilled Shrimp', price: 8 },
+          { name: 'Salmon', price: 10 }
+        ]
+      }
+    ]
+  },
+  { id: 'menu-6', name: 'Soup of the Day', description: 'Ask your server for today\'s selection', price: 9.00, category: 'appetizers', prepTime: 3, onMenu: true, available: true, modifiers: [] },
+  { id: 'menu-7', name: 'Calamari', description: 'Crispy fried calamari with marinara', price: 16.00, category: 'appetizers', prepTime: 8, onMenu: true, available: true, modifiers: [] },
+  { id: 'menu-8', name: 'Bruschetta', description: 'Toasted bread with tomato basil topping', price: 12.00, category: 'appetizers', prepTime: 6, onMenu: true, available: true, modifiers: [] },
+  { id: 'menu-9', name: 'Chocolate Cake', description: 'Rich chocolate layer cake', price: 12.00, category: 'desserts', prepTime: 5, onMenu: true, available: false, modifiers: [] },
+  { id: 'menu-10', name: 'Tiramisu', description: 'Classic Italian coffee dessert', price: 11.00, category: 'desserts', prepTime: 5, onMenu: true, available: true, modifiers: [] },
+  { id: 'menu-11', name: 'House Red Wine', description: 'Glass of house cabernet', price: 12.00, category: 'drinks', prepTime: 1, onMenu: true, available: true, modifiers: [] },
+  { id: 'menu-12', name: 'House White Wine', description: 'Glass of house chardonnay', price: 12.00, category: 'drinks', prepTime: 1, onMenu: true, available: true, modifiers: [] },
+  { 
+    id: 'menu-13', 
+    name: 'Draft Beer', 
+    description: 'Ask for today\'s selections', 
+    price: 8.00, 
+    category: 'drinks', 
+    prepTime: 1, 
+    onMenu: true, 
+    available: true,
+    modifiers: [
+      {
+        name: 'Selection',
+        required: true,
+        options: [
+          { name: 'IPA', price: 0 },
+          { name: 'Lager', price: 0 },
+          { name: 'Pilsner', price: 0 },
+          { name: 'Stout', price: 2 }
+        ]
+      }
+    ]
+  },
+  { 
+    id: 'menu-14', 
+    name: 'Soft Drinks', 
+    description: 'Coke, Sprite, Ginger Ale', 
+    price: 4.00, 
+    category: 'drinks', 
+    prepTime: 1, 
+    onMenu: true, 
+    available: true,
+    modifiers: [
+      {
+        name: 'Type',
+        required: true,
+        options: [
+          { name: 'Coca-Cola', price: 0 },
+          { name: 'Diet Coke', price: 0 },
+          { name: 'Sprite', price: 0 },
+          { name: 'Ginger Ale', price: 0 },
+          { name: 'Root Beer', price: 0 },
+          { name: 'Lemonade', price: 0 }
+        ]
+      }
+    ]
+  },
+  { id: 'menu-15', name: 'Garlic Mashed Potatoes', description: 'Creamy mashed potatoes with roasted garlic', price: 8.00, category: 'sides', prepTime: 5, onMenu: true, available: true, modifiers: [] },
+  { id: 'menu-16', name: 'Seasonal Vegetables', description: 'Chef\'s selection of grilled vegetables', price: 7.00, category: 'sides', prepTime: 6, onMenu: true, available: true, modifiers: [] },
+  { 
+    id: 'menu-17', 
+    name: 'French Fries', 
+    description: 'Crispy hand-cut fries', 
+    price: 6.00, 
+    category: 'sides', 
+    prepTime: 7, 
+    onMenu: true, 
+    available: true,
+    modifiers: [
+      {
+        name: 'Sauce',
+        required: false,
+        options: [
+          { name: 'No Sauce', price: 0 },
+          { name: 'Ketchup', price: 0 },
+          { name: 'Ranch', price: 0.50 },
+          { name: 'Aioli', price: 0.50 },
+          { name: 'Cheese Sauce', price: 1 }
+        ]
+      }
+    ]
+  },
 ];
 
 // Inventory
