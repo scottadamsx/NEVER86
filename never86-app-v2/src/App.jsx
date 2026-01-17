@@ -25,6 +25,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
+import { ScenarioProvider } from './context/ScenarioContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import Login from './pages/Login';
@@ -43,6 +44,7 @@ import ManagerSettings from './pages/manager/Settings';
 import ManagerAnalytics from './pages/manager/Analytics';
 import ManagerSchedule from './pages/manager/Schedule';
 import ManagerProfitability from './pages/manager/Profitability';
+import ManagerScenarioManager from './pages/manager/ScenarioManager';
 
 // Server Pages - Only accessible to users with 'server' role
 import ServerDashboard from './pages/server/Dashboard';
@@ -64,6 +66,7 @@ import KitchenSettings from './pages/kitchen/Settings';
 import Landing from './pages/Landing';
 import Features from './pages/marketing/Features';
 import Benefits from './pages/marketing/Benefits';
+import About from './pages/marketing/About';
 import ForManagers from './pages/marketing/ForManagers';
 import ForServers from './pages/marketing/ForServers';
 import ForKitchen from './pages/marketing/ForKitchen';
@@ -81,10 +84,12 @@ function App() {
           <ToastProvider>
             {/* AuthProvider manages user authentication (login/logout, current user) */}
             <AuthProvider>
-              {/* DataProvider manages all restaurant data (tables, orders, menu items, etc.) */}
-              <DataProvider>
-                {/* Routes defines all the pages and their URLs */}
-                <Routes>
+              {/* ScenarioProvider manages test scenarios and restaurant name */}
+              <ScenarioProvider>
+                {/* DataProvider manages all restaurant data (tables, orders, menu items, etc.) */}
+                <DataProvider>
+                  {/* Routes defines all the pages and their URLs */}
+                  <Routes>
                   {/* ============================================
                       PUBLIC ROUTES - No login required
                       ============================================ */}
@@ -95,6 +100,7 @@ function App() {
                   {/* Marketing pages - public for demos */}
                   <Route path="/features" element={<Features />} />
                   <Route path="/benefits" element={<Benefits />} />
+                  <Route path="/about" element={<About />} />
                   
                   {/* Role-specific pages - protected, only accessible after sign-in */}
                   <Route path="/manager" element={<ProtectedPage allowedRoles={['manager']}><ForManagers /></ProtectedPage>} />
@@ -124,6 +130,7 @@ function App() {
                     <Route path="menu" element={<ManagerMenu />} />
                     <Route path="chat" element={<ManagerChat />} />
                     <Route path="settings" element={<ManagerSettings />} />
+                    <Route path="scenario-manager" element={<ManagerScenarioManager />} />
                     <Route path="analytics" element={<ManagerAnalytics />} />
                     <Route path="schedule" element={<ManagerSchedule />} />
                     <Route path="profitability" element={<ManagerProfitability />} />
@@ -171,7 +178,8 @@ function App() {
                       This handles 404 errors by sending users to login */}
                   <Route path="*" element={<Navigate to="/login" replace />} />
                 </Routes>
-              </DataProvider>
+                </DataProvider>
+              </ScenarioProvider>
             </AuthProvider>
           </ToastProvider>
         </ThemeProvider>

@@ -62,10 +62,23 @@ function Login() {
 
     // Validate username exists in staff and matches the selected role
     const trimmedUsername = username.trim();
-    const staffMember = staff.find(s => s.username.toLowerCase() === trimmedUsername.toLowerCase());
+    
+    // Debug: Log staff data
+    console.log('Staff array:', staff);
+    console.log('Staff length:', staff?.length);
+    console.log('Looking for username:', trimmedUsername);
+    
+    if (!staff || staff.length === 0) {
+      setError('No staff data available. Please refresh the page or contact support.');
+      console.error('Staff array is empty or undefined');
+      return;
+    }
+    
+    const staffMember = staff.find(s => s.username && s.username.toLowerCase() === trimmedUsername.toLowerCase());
     
     if (!staffMember) {
-      setError('Username not found in system');
+      console.log('Available usernames:', staff.map(s => s.username));
+      setError(`Username "${trimmedUsername}" not found in system. Available: ${staff.map(s => s.username).join(', ')}`);
       return;
     }
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Settings as SettingsIcon, Bell, Moon, User, Save, RefreshCw, Download, Upload, Clock, Store } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Settings as SettingsIcon, Bell, Moon, User, Save, RefreshCw, Download, Upload, Clock, Store, FlaskConical } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
@@ -9,6 +10,7 @@ import { Button } from '../../components/ui/Button';
 import MenuQRCode from '../../components/MenuQRCode';
 
 function ManagerSettings() {
+  const navigate = useNavigate();
   const { darkMode, toggleDarkMode } = useTheme();
   const { success, error: showError } = useToast();
   const [notifications, setNotifications] = useState(true);
@@ -281,6 +283,28 @@ function ManagerSettings() {
               className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
             />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Data Lab */}
+      <Card className="border-2 border-purple-200 dark:border-purple-900/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+            <FlaskConical className="w-5 h-5" />
+            Data Lab
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Advanced data management: Upload CSV scenarios, view current state, and manage test data sets.
+          </p>
+          <Button 
+            onClick={() => navigate('/manager/scenario-manager')}
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            <FlaskConical className="w-4 h-4 mr-2" />
+            Open Data Lab
+          </Button>
         </CardContent>
       </Card>
 

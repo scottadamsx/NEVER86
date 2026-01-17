@@ -15,7 +15,8 @@ import {
   Trophy,
   Calendar,
   DollarSign,
-  PieChart
+  PieChart,
+  X
 } from 'lucide-react';
 
 const managerNav = [
@@ -48,7 +49,7 @@ const kitchenNav = [
   { to: '/kitchen/settings', icon: Settings, label: 'Settings' },
 ];
 
-function Sidebar({ expanded, onMouseEnter, onMouseLeave }) {
+function Sidebar({ expanded, isMobile, onMouseEnter, onMouseLeave, onClose }) {
   const { currentUser } = useAuth();
   const { getUnreadMessageCount } = useData();
 
@@ -74,18 +75,29 @@ function Sidebar({ expanded, onMouseEnter, onMouseLeave }) {
 
   const navItems = getNavItems();
 
+  // On mobile, sidebar should always show labels when open
+  const showLabels = isMobile ? expanded : expanded;
+
   return (
     <aside
-      className={`fixed left-0 top-0 h-full ${getRoleColor()} text-white transition-all duration-300 z-40 ${
-        expanded ? 'w-56' : 'w-16'
-      }`}
+      className={`
+        fixed left-0 top-0 h-full ${getRoleColor()} text-white transition-all duration-300 z-50
+        ${isMobile 
+          ? expanded 
+            ? 'w-64 translate-x-0' 
+            : '-translate-x-full'
+          : expanded 
+            ? 'w-56' 
+            : 'w-16'
+        }
+      `}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      {/* Logo */}
-      <div className="h-16 flex items-center px-4 border-b border-white/10">
+      {/* Logo with close button on mobile */}
+      <div className="h-16 flex items-center justify-between px-4 border-b border-white/10">
         <span className="font-black text-2xl tracking-tight whitespace-nowrap">
-          {expanded ? (
+          {showLabels ? (
             <>
               <span className="text-white">NEVER</span>
               <span style={{ color: '#4169E1' }}>86</span>
@@ -94,10 +106,19 @@ function Sidebar({ expanded, onMouseEnter, onMouseLeave }) {
             <span style={{ color: '#4169E1' }}>86</span>
           )}
         </span>
+        {isMobile && expanded && (
+          <button
+            onClick={onClose}
+            className="p-2 -mr-2 text-white/70 hover:text-white transition-colors touch-manipulation"
+            aria-label="Close menu"
+          >
+            <X size={24} />
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
-      <nav className="mt-4 px-2">
+      <nav className="mt-4 px-2 overflow-y-auto h-[calc(100vh-4rem)]">
         {navItems.map((item) => {
           const isChat = item.label === 'Chat';
           const showBadge = isChat && unreadMessages > 0;
@@ -106,29 +127,30 @@ function Sidebar({ expanded, onMouseEnter, onMouseLeave }) {
             <NavLink
               key={item.to}
               to={item.to}
+              onClick={() => isMobile && onClose && onClose()}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-3 rounded-lg mb-1 transition-colors relative ${
+                `flex items-center gap-3 px-3 py-3.5 rounded-lg mb-1 transition-colors relative touch-manipulation min-h-[44px] ${
                   isActive
                     ? 'bg-white/20 text-white'
-                    : 'text-white/70 hover:bg-white/10 hover:text-white'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white active:bg-white/15'
                 }`
               }
             >
               <div className="relative flex-shrink-0">
-                <item.icon size={20} />
+                <item.icon size={22} />
                 {showBadge && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                     {unreadMessages > 9 ? '9+' : unreadMessages}
                   </span>
                 )}
               </div>
               <span
                 className={`whitespace-nowrap transition-opacity duration-300 flex items-center gap-2 ${
-                  expanded ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'
+                  showLabels ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'
                 }`}
               >
                 {item.label}
-                {showBadge && expanded && (
+                {showBadge && showLabels && (
                   <span className="bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                     {unreadMessages > 9 ? '9+' : unreadMessages}
                   </span>

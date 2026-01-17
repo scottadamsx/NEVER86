@@ -8,8 +8,19 @@ const MenuQRCode = ({ restaurantId = 'never86' }) => {
   const [copied, setCopied] = useState(false);
   const [customId, setCustomId] = useState(restaurantId);
 
-  // Generate the menu URL - in production this would be your actual domain
-  const baseUrl = window.location.origin;
+  // Generate the menu URL - works on Hostinger and other hosting providers
+  // Uses window.location.origin which automatically gets the correct domain
+  const getBaseUrl = () => {
+    // In production, this will be your Hostinger domain
+    // e.g., https://yourdomain.com or https://www.yourdomain.com
+    if (typeof window !== 'undefined') {
+      return window.location.origin;
+    }
+    // Fallback for SSR (shouldn't happen in this app, but good to have)
+    return '';
+  };
+
+  const baseUrl = getBaseUrl();
   const menuUrl = `${baseUrl}/menu/${customId}`;
 
   const handleCopyLink = async () => {
@@ -134,7 +145,18 @@ const MenuQRCode = ({ restaurantId = 'never86' }) => {
           <li>• Place on every table for customer convenience</li>
           <li>• Include in your marketing materials</li>
           <li>• Test the QR code before printing</li>
+          <li>• The QR code will work on any device when scanned</li>
+          <li>• Works with Hostinger and all hosting providers</li>
         </ul>
+      </div>
+      
+      {/* Production Note */}
+      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <p className="text-xs text-blue-800 dark:text-blue-200">
+          <strong>Note:</strong> The QR code automatically uses your current domain. 
+          When deployed to Hostinger, it will use your production URL (e.g., https://yourdomain.com/menu/never86).
+          The menu page is publicly accessible and requires no login.
+        </p>
       </div>
     </div>
   );

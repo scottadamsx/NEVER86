@@ -161,8 +161,8 @@ function ServerFloor() {
       </div>
 
       {/* Floor Grid */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm">
-        <div className="grid grid-cols-5 gap-3">
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-3 sm:p-4 shadow-sm">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3">
           {tables.map((table) => {
             const isMine = isMyTable(table);
             const dimmed = showMySection && !isMine;
@@ -174,7 +174,7 @@ function ServerFloor() {
                 key={table.id}
                 onClick={() => handleTableClick(table)}
                 disabled={dimmed}
-                className={`p-3 rounded-lg border-2 transition-all relative ${
+                className={`p-2.5 sm:p-3 rounded-lg border-2 transition-all relative touch-manipulation min-h-[80px] ${
                   dimmed
                     ? 'bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-600 opacity-40 cursor-not-allowed'
                     : hasReadyFood

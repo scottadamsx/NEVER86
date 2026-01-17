@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
-import { MessageSquare, Send, User, ChefHat, ClipboardList, AlertTriangle, Package, Search } from 'lucide-react';
+import { MessageSquare, Send, User, ChefHat, ClipboardList, AlertTriangle, Package, Search, X } from 'lucide-react';
 import { formatTime } from '../../utils/timeFormat';
 
 function ServerChat() {
@@ -12,6 +12,7 @@ function ServerChat() {
   const [readMessages, setReadMessages] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showChatList, setShowChatList] = useState(true);
   const messagesEndRef = useRef(null);
 
   const kitchenStaff = staff.filter(s => s.role === 'kitchen');
@@ -170,13 +171,22 @@ function ServerChat() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Team Chat</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">Team Chat</h1>
 
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden flex" style={{ height: 'calc(100vh - 200px)' }}>
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm overflow-hidden flex flex-col sm:flex-row" style={{ height: 'calc(100vh - 200px)' }}>
         {/* Chat List */}
-        <div className="w-1/3 border-r border-gray-200 dark:border-slate-700 overflow-y-auto">
-          <div className="p-4 border-b border-gray-200 dark:border-slate-700">
-            <h2 className="font-semibold text-gray-900 dark:text-white mb-3">Chats</h2>
+        <div className={`${showChatList ? 'flex' : 'hidden'} sm:flex sm:w-1/3 lg:w-1/4 flex-col border-r border-gray-200 dark:border-slate-700 overflow-y-auto`}>
+          <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-slate-700 flex-shrink-0">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-gray-900 dark:text-white">Chats</h2>
+              <button
+                onClick={() => setShowChatList(false)}
+                className="sm:hidden p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                aria-label="Close chat list"
+              >
+                <X size={20} />
+              </button>
+            </div>
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
@@ -192,7 +202,10 @@ function ServerChat() {
           <div className="divide-y divide-gray-200 dark:divide-slate-700">
             {filteredChats.kitchen && (
               <button
-                onClick={() => setSelectedChat('kitchen')}
+                onClick={() => {
+                  setSelectedChat('kitchen');
+                  setShowChatList(false);
+                }}
                 className={`w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors relative ${
                   selectedChat === 'kitchen'
                     ? 'bg-blue-50 dark:bg-blue-900/20'
@@ -203,11 +216,11 @@ function ServerChat() {
                   getUnreadCount('kitchen') > 0 ? 'border-l-4 border-blue-500' : ''
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <ChefHat className="text-kitchen-primary" size={24} />
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900 dark:text-white">Kitchen</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">All kitchen staff</p>
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <ChefHat className="text-kitchen-primary flex-shrink-0" size={24} />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 dark:text-white truncate">Kitchen</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">All kitchen staff</p>
                   </div>
                   {getUnreadCount('kitchen') > 0 && (
                     <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
@@ -223,7 +236,10 @@ function ServerChat() {
               return (
                 <button
                   key={manager.id}
-                  onClick={() => setSelectedChat(chatId)}
+                  onClick={() => {
+                    setSelectedChat(chatId);
+                    setShowChatList(false);
+                  }}
                   className={`w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors relative ${
                     selectedChat === chatId 
                       ? 'bg-blue-50 dark:bg-blue-900/20' 
@@ -234,11 +250,11 @@ function ServerChat() {
                     unread > 0 ? 'border-l-4 border-blue-500' : ''
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <User className="text-brand-navy" size={20} />
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900 dark:text-white">{manager.displayName}</p>
-                    </div>
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                      <User className="text-brand-navy flex-shrink-0" size={20} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 dark:text-white truncate">{manager.displayName}</p>
+                      </div>
                     {unread > 0 && (
                       <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                         {unread}
@@ -254,7 +270,10 @@ function ServerChat() {
               return (
                 <button
                   key={server.id}
-                  onClick={() => setSelectedChat(chatId)}
+                  onClick={() => {
+                    setSelectedChat(chatId);
+                    setShowChatList(false);
+                  }}
                   className={`w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors relative ${
                     selectedChat === chatId 
                       ? 'bg-blue-50 dark:bg-blue-900/20' 
@@ -265,10 +284,10 @@ function ServerChat() {
                     unread > 0 ? 'border-l-4 border-blue-500' : ''
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <ClipboardList className="text-server-primary" size={20} />
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900 dark:text-white">{server.displayName}</p>
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <ClipboardList className="text-server-primary flex-shrink-0" size={20} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 dark:text-white truncate">{server.displayName}</p>
                     </div>
                     {unread > 0 && (
                       <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
@@ -283,16 +302,23 @@ function ServerChat() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {getRecipientInfo() ? (
             <>
-              <div className="p-4 border-b border-gray-200 dark:border-slate-700">
-                <h2 className="font-semibold text-gray-900 dark:text-white">
+              <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-slate-700 flex-shrink-0 flex items-center justify-between">
+                <h2 className="font-semibold text-gray-900 dark:text-white truncate">
                   {getRecipientInfo()?.name}
                 </h2>
+                <button
+                  onClick={() => setShowChatList(true)}
+                  className="sm:hidden p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 ml-2 flex-shrink-0"
+                  aria-label="Show chat list"
+                >
+                  <MessageSquare size={20} />
+                </button>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 min-h-0">
                 {getConversation().map(message => {
                   const isMe = message.fromRole === 'server' && message.fromName === currentUser.displayName;
                   const is86Request = message.type === '86-request';
@@ -348,18 +374,19 @@ function ServerChat() {
                   </div>
                 )}
 
-                <div className="p-4">
+                <div className="p-3 sm:p-4 flex-shrink-0">
                   <div className="flex gap-2">
                     {selectedChat === 'kitchen' && (
                       <button
                         type="button"
                         onClick={() => setShowQuickActions(!showQuickActions)}
-                        className={`px-3 py-2 rounded-lg transition-colors ${
+                        className={`px-3 py-2.5 rounded-lg transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center ${
                           showQuickActions
                             ? 'bg-orange-600 text-white'
-                            : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200'
+                            : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 active:bg-gray-300'
                         }`}
                         title="86 Request"
+                        aria-label="86 Request"
                       >
                         <AlertTriangle size={20} />
                       </button>
@@ -369,11 +396,12 @@ function ServerChat() {
                       value={messageText}
                       onChange={(e) => setMessageText(e.target.value)}
                       placeholder="Type a message..."
-                      className="flex-1 px-4 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                      className="flex-1 px-3 sm:px-4 py-2.5 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm sm:text-base min-h-[44px]"
                     />
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-server-primary text-white rounded-lg hover:bg-server-primary/90 transition-colors"
+                      className="px-4 py-2.5 bg-server-primary text-white rounded-lg hover:bg-server-primary/90 active:bg-server-primary/80 transition-colors touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+                      aria-label="Send message"
                     >
                       <Send size={20} />
                     </button>

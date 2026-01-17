@@ -187,6 +187,7 @@ const Benefits = () => {
             <div className="hidden md:flex items-center gap-8">
               <Link to="/features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</Link>
               <Link to="/benefits" className="text-sm text-foreground">Benefits</Link>
+              <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
             </div>
             <div className="flex items-center gap-3">
               <Link to="/login" className="hidden sm:block">
@@ -282,49 +283,49 @@ const Benefits = () => {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-12 px-4 sm:px-6 lg:px-8">
+      <footer className="border-t border-border py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-0 mb-4">
-                <span className="text-2xl font-black text-foreground">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-6 sm:mb-8">
+            <div className="col-span-2 sm:col-span-1">
+              <div className="flex items-center gap-0 mb-3 sm:mb-4">
+                <span className="text-xl sm:text-2xl font-black text-foreground">
                   NEVER
                 </span>
-                <span className="text-2xl font-black" style={{ color: '#4169E1' }}>
+                <span className="text-xl sm:text-2xl font-black" style={{ color: '#4169E1' }}>
                   86
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 The complete restaurant management solution for modern establishments.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold text-foreground mb-4 text-sm">Product</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/features" className="text-muted-foreground hover:text-foreground">Features</Link></li>
-                <li><Link to="/benefits" className="text-muted-foreground hover:text-foreground">Benefits</Link></li>
-                <li><Link to="/manager" className="text-muted-foreground hover:text-foreground">For Managers</Link></li>
+              <h4 className="font-semibold text-foreground mb-3 sm:mb-4 text-xs sm:text-sm">Product</h4>
+              <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+                <li><Link to="/features" className="text-muted-foreground hover:text-foreground transition-colors">Features</Link></li>
+                <li><Link to="/benefits" className="text-muted-foreground hover:text-foreground transition-colors">Benefits</Link></li>
+                <li><Link to="/manager" className="text-muted-foreground hover:text-foreground transition-colors">For Managers</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-foreground mb-4 text-sm">Company</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="text-muted-foreground hover:text-foreground">About</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-foreground">Contact</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-foreground">Support</a></li>
+              <h4 className="font-semibold text-foreground mb-3 sm:mb-4 text-xs sm:text-sm">Company</h4>
+              <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+                <li><Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About</Link></li>
+                <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a></li>
+                <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Support</a></li>
               </ul>
             </div>
-            <div>
-              <h4 className="font-semibold text-foreground mb-4 text-sm">Resources</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="text-muted-foreground hover:text-foreground">Documentation</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-foreground">API</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-foreground">Blog</a></li>
+            <div className="col-span-2 sm:col-span-1">
+              <h4 className="font-semibold text-foreground mb-3 sm:mb-4 text-xs sm:text-sm">Resources</h4>
+              <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+                <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Documentation</a></li>
+                <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">API</a></li>
+                <li><a href="#" className="text-muted-foreground hover:text-foreground transition-colors">Blog</a></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-border pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; 2024 NEVER86. All rights reserved.</p>
+          <div className="border-t border-border pt-6 sm:pt-8 text-center text-xs sm:text-sm text-muted-foreground">
+            <p>&copy; 2026 NEVER86. All rights reserved.</p>
           </div>
         </div>
       </footer>

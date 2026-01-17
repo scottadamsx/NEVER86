@@ -147,58 +147,58 @@ function ServerDashboard() {
   return (
     <div>
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-server-primary to-server-light rounded-lg p-5 mb-5 text-white">
-        <h1 className="text-xl font-semibold mb-0.5">Good evening, {currentUser?.displayName}!</h1>
-        <p className="text-white/70 text-sm">{today}</p>
+      <div className="bg-gradient-to-r from-server-primary to-server-light rounded-lg p-4 sm:p-5 mb-4 sm:mb-5 text-white">
+        <h1 className="text-lg sm:text-xl font-semibold mb-0.5">Good evening, {currentUser?.displayName}!</h1>
+        <p className="text-white/70 text-xs sm:text-sm">{today}</p>
         <p className="text-white/70 text-xs mt-0.5">Section A • {myTables.length} tables assigned</p>
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-5">
-        <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-gray-100 dark:border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-md flex items-center justify-center">
-              <UtensilsCrossed className="text-blue-600 dark:text-blue-400" size={20} />
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-5">
+        <div className="bg-white dark:bg-slate-800 rounded-lg p-3 sm:p-4 shadow-sm border border-gray-100 dark:border-slate-700">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-blue-100 dark:bg-blue-900/30 rounded-md flex items-center justify-center flex-shrink-0">
+              <UtensilsCrossed className="text-blue-600 dark:text-blue-400" size={18} />
             </div>
-            <div>
-              <p className="text-gray-500 dark:text-gray-400 text-xs font-medium">Active Tables</p>
-              <p className="text-xl font-semibold text-gray-900 dark:text-white">{activeTables.length}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-gray-100 dark:border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-md flex items-center justify-center">
-              <DollarSign className="text-emerald-600 dark:text-emerald-400" size={20} />
-            </div>
-            <div>
-              <p className="text-gray-500 dark:text-gray-400 text-xs font-medium">Sales Tonight</p>
-              <p className="text-xl font-semibold text-gray-900 dark:text-white">${todaySales.toFixed(2)}</p>
+            <div className="min-w-0">
+              <p className="text-gray-500 dark:text-gray-400 text-xs font-medium truncate">Active Tables</p>
+              <p className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{activeTables.length}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-gray-100 dark:border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-md flex items-center justify-center">
-              <TrendingUp className="text-purple-600 dark:text-purple-400" size={20} />
+        <div className="bg-white dark:bg-slate-800 rounded-lg p-3 sm:p-4 shadow-sm border border-gray-100 dark:border-slate-700">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-md flex items-center justify-center flex-shrink-0">
+              <DollarSign className="text-emerald-600 dark:text-emerald-400" size={18} />
             </div>
-            <div>
-              <p className="text-gray-500 dark:text-gray-400 text-xs font-medium">Avg Tip Tonight</p>
-              <p className="text-xl font-semibold text-gray-900 dark:text-white">{avgTip}%</p>
+            <div className="min-w-0">
+              <p className="text-gray-500 dark:text-gray-400 text-xs font-medium truncate">Sales Tonight</p>
+              <p className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white truncate">${todaySales.toFixed(2)}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-gray-100 dark:border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-md flex items-center justify-center">
-              <DollarSign className="text-yellow-600 dark:text-yellow-400" size={20} />
+        <div className="bg-white dark:bg-slate-800 rounded-lg p-3 sm:p-4 shadow-sm border border-gray-100 dark:border-slate-700">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-purple-100 dark:bg-purple-900/30 rounded-md flex items-center justify-center flex-shrink-0">
+              <TrendingUp className="text-purple-600 dark:text-purple-400" size={18} />
             </div>
-            <div>
-              <p className="text-gray-500 dark:text-gray-400 text-xs font-medium">Takehome</p>
-              <p className="text-xl font-semibold text-gray-900 dark:text-white">${takehome.toFixed(2)}</p>
+            <div className="min-w-0">
+              <p className="text-gray-500 dark:text-gray-400 text-xs font-medium truncate">Avg Tip Tonight</p>
+              <p className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{avgTip}%</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 rounded-lg p-3 sm:p-4 shadow-sm border border-gray-100 dark:border-slate-700">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-md flex items-center justify-center flex-shrink-0">
+              <DollarSign className="text-yellow-600 dark:text-yellow-400" size={18} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-gray-500 dark:text-gray-400 text-xs font-medium truncate">Takehome</p>
+              <p className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white truncate">${takehome.toFixed(2)}</p>
             </div>
           </div>
         </div>
@@ -241,10 +241,11 @@ function ServerDashboard() {
                         }));
                       }
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-2.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 active:bg-green-800 transition-colors touch-manipulation min-h-[44px]"
                   >
-                    <CheckCircle size={14} />
-                    Run Food
+                    <CheckCircle size={16} />
+                    <span className="hidden xs:inline">Run Food</span>
+                    <span className="xs:hidden">Run</span>
                   </button>
                 </div>
               );
@@ -291,10 +292,11 @@ function ServerDashboard() {
                         return updated;
                       });
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-2.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation min-h-[44px]"
                   >
-                    <CheckCircle size={14} />
-                    Checked In
+                    <CheckCircle size={16} />
+                    <span className="hidden xs:inline">Checked In</span>
+                    <span className="xs:hidden">Done</span>
                   </button>
                 </div>
               );
@@ -304,9 +306,9 @@ function ServerDashboard() {
       )}
 
       {/* My Tables Quick View */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm border border-gray-100 dark:border-slate-700 mb-4">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-3">My Tables Quick View</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+      <div className="bg-white dark:bg-slate-800 rounded-lg p-3 sm:p-4 shadow-sm border border-gray-100 dark:border-slate-700 mb-4">
+        <h2 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white mb-3">My Tables Quick View</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-2.5">
           {myTables.map(table => {
             const hasReadyFood = readyChits.some(c => c.tableNumber === table.number);
             const order = getOrderByTable(table.id);
@@ -314,7 +316,7 @@ function ServerDashboard() {
               <button
                 key={table.id}
                 onClick={() => handleTableClick(table)}
-                className={`p-3 rounded-md border text-left transition-all hover:scale-[1.02] ${
+                className={`p-2.5 sm:p-3 rounded-md border text-left transition-all hover:scale-[1.02] active:scale-[0.98] touch-manipulation min-h-[80px] ${
                   hasReadyFood
                     ? 'border-orange-400 bg-orange-50 dark:bg-orange-900/20'
                     : table.status === 'available'
@@ -346,16 +348,16 @@ function ServerDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
         <button
           onClick={() => navigate('/server/tables')}
-          className="bg-brand-navy text-white py-3 px-4 rounded-md text-sm font-medium hover:bg-brand-navy/90 transition-colors"
+          className="bg-brand-navy text-white py-3 sm:py-3.5 px-4 rounded-md text-sm font-medium hover:bg-brand-navy/90 active:bg-brand-navy/80 transition-colors touch-manipulation min-h-[44px]"
         >
           Seat Table
         </button>
         <button
           onClick={() => navigate('/server/tables')}
-          className="bg-server-primary text-white py-3 px-4 rounded-md text-sm font-medium hover:bg-server-primary/90 transition-colors"
+          className="bg-server-primary text-white py-3 sm:py-3.5 px-4 rounded-md text-sm font-medium hover:bg-server-primary/90 active:bg-server-primary/80 transition-colors touch-manipulation min-h-[44px]"
         >
           Take Order
         </button>
@@ -363,7 +365,7 @@ function ServerDashboard() {
 
       {/* Seat Table Modal */}
       {showSeatModal && selectedTable && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-xl">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -413,7 +415,7 @@ function ServerDashboard() {
               </button>
               <button
                 onClick={handleSeatTable}
-                className="flex-1 py-2 px-4 bg-green-600 text-white rounded-xl hover:bg-green-700 flex items-center justify-center gap-2"
+                className="flex-1 py-3 px-4 bg-green-600 text-white rounded-xl hover:bg-green-700 active:bg-green-800 flex items-center justify-center gap-2 transition-colors touch-manipulation min-h-[44px]"
               >
                 <Users size={18} />
                 Seat {guestCount}
@@ -425,10 +427,10 @@ function ServerDashboard() {
 
       {/* Run Food Modal */}
       {showRunFoodModal && selectedTable && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-xl">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-t-2xl sm:rounded-2xl p-5 sm:p-6 w-full max-w-sm shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                 Table {selectedTable.number}
               </h2>
               <button
@@ -436,7 +438,8 @@ function ServerDashboard() {
                   setShowRunFoodModal(false);
                   setSelectedTable(null);
                 }}
-                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                className="p-2 -mr-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+                aria-label="Close"
               >
                 <X size={24} />
               </button>
@@ -458,7 +461,7 @@ function ServerDashboard() {
                   setShowRunFoodModal(false);
                   setSelectedTable(null);
                 }}
-                className="flex-1 py-2 px-4 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600"
+                className="flex-1 py-3 px-4 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 active:bg-gray-300 dark:active:bg-slate-500 transition-colors touch-manipulation min-h-[44px]"
               >
                 View Table
               </button>
@@ -471,7 +474,7 @@ function ServerDashboard() {
                   setShowRunFoodModal(false);
                   setSelectedTable(null);
                 }}
-                className="flex-1 py-2 px-4 bg-orange-600 text-white rounded-xl hover:bg-orange-700 flex items-center justify-center gap-2"
+                className="flex-1 py-3 px-4 bg-orange-600 text-white rounded-xl hover:bg-orange-700 active:bg-orange-800 flex items-center justify-center gap-2 transition-colors touch-manipulation min-h-[44px]"
               >
                 <CheckCircle size={18} />
                 Run Food

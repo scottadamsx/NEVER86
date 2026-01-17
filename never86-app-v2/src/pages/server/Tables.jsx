@@ -396,7 +396,7 @@ function ServerTables() {
 
       {/* Seat Modal */}
       {showSeatModal && selectedTable && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[100] p-0 sm:p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-[100] p-0 sm:p-4" onClick={(e) => e.target === e.currentTarget && setShowSeatModal(false)}>
           <Card className="w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl max-h-[80vh] overflow-auto animate-slide-in">
             <CardHeader className="border-b">
               <div className="flex items-center justify-between">

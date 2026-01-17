@@ -110,11 +110,30 @@ const loadDataFromStorage = () => {
     const savedMessages = localStorage.getItem('never86_messages');
 
     // Parse JSON strings back to objects, or use mock data if not found
+    let parsedStaff;
+    try {
+      parsedStaff = savedStaff ? JSON.parse(savedStaff) : null;
+    } catch (e) {
+      console.error('Error parsing staff from localStorage:', e);
+      parsedStaff = null;
+    }
+    
+    // Ensure staff always has data - if empty array or invalid, use mock data and fix localStorage
+    const staff = (parsedStaff && Array.isArray(parsedStaff) && parsedStaff.length > 0) 
+      ? parsedStaff 
+      : mockStaff;
+    
+    // If we had to use mock data, save it to localStorage to fix the issue
+    if (!parsedStaff || !Array.isArray(parsedStaff) || parsedStaff.length === 0) {
+      console.warn('Staff data was empty or invalid, using mock data and fixing localStorage');
+      localStorage.setItem('never86_staff', JSON.stringify(mockStaff));
+    }
+    
     return {
       tables: savedTables ? JSON.parse(savedTables) : mockTables,
       menuItems: savedMenuItems ? JSON.parse(savedMenuItems) : mockMenuItems,
       inventory: savedInventory ? JSON.parse(savedInventory) : mockInventory,
-      staff: savedStaff ? JSON.parse(savedStaff) : mockStaff,
+      staff: staff,
       orders: savedOrders ? JSON.parse(savedOrders) : mockOrders,
       chits: savedChits ? JSON.parse(savedChits) : mockChits,
       messages: savedMessages ? JSON.parse(savedMessages) : defaultMessages,
@@ -159,10 +178,25 @@ export function DataProvider({ children }) {
   // All restaurant data is stored in React state
   // When these change, components that use them will automatically re-render
   
+  // Ensure staff always has data - fallback to mock if empty
+  const initialStaff = initialData.staff && initialData.staff.length > 0 
+    ? initialData.staff 
+    : mockStaff;
+  
+  // Debug: Log staff initialization
+  console.log('DataContext: Initial staff data:', initialStaff);
+  console.log('DataContext: Staff count:', initialStaff?.length);
+  
   const [tables, setTables] = useState(initialData.tables);           // Restaurant tables
   const [menuItems, setMenuItems] = useState(initialData.menuItems); // Menu items
   const [inventory, setInventory] = useState(initialData.inventory); // Inventory stock
-  const [staff, setStaff] = useState(initialData.staff);             // Staff members
+  const [staff, setStaff] = useState(initialStaff);             // Staff members
+  
+  // Debug: Log staff state changes
+  useEffect(() => {
+    console.log('DataContext: Staff state updated:', staff);
+    console.log('DataContext: Staff count:', staff?.length);
+  }, [staff]);
   const [orders, setOrders] = useState(initialData.orders);          // Customer orders
   const [chits, setChits] = useState(initialData.chits);              // Kitchen tickets
   const [messages, setMessages] = useState(initialData.messages);    // Chat messages
@@ -363,6 +397,100 @@ export function DataProvider({ children }) {
     // Cleanup: Cancel the timer if data changes again before 300ms
     return () => clearTimeout(timeoutId);
   }, [tables, menuItems, inventory, staff, orders, chits, messages, storeHours, timeOffRequests, staffAvailability]);
+
+  /**
+   * Load scenario data - replaces entire app state
+   * 
+   * @param {Object} scenarioData - Data object with tables, menuItems, inventory, staff, orders, chits, messages
+   */
+  const loadScenarioData = (scenarioData) => {
+    // Validate required data
+    if (!scenarioData) {
+      throw new Error('Scenario data is required');
+    }
+
+    // Set all state to new data (with defaults for missing)
+    // Ensure staff always has data - fallback to mock if empty
+    const scenarioStaff = scenarioData.staff && scenarioData.staff.length > 0 
+      ? scenarioData.staff 
+      : mockStaff;
+    
+    setTables(scenarioData.tables || []);
+    setMenuItems(scenarioData.menuItems || []);
+    setInventory(scenarioData.inventory || []);
+    setStaff(scenarioStaff);
+    setOrders(scenarioData.orders || []);
+    setChits(scenarioData.chits || []);
+    setMessages(scenarioData.messages || []);
+
+    // Save to localStorage immediately
+    try {
+      localStorage.setItem('never86_tables', JSON.stringify(scenarioData.tables || []));
+      localStorage.setItem('never86_menuItems', JSON.stringify(scenarioData.menuItems || []));
+      localStorage.setItem('never86_inventory', JSON.stringify(scenarioData.inventory || []));
+      localStorage.setItem('never86_staff', JSON.stringify(scenarioStaff));
+      localStorage.setItem('never86_orders', JSON.stringify(scenarioData.orders || []));
+      localStorage.setItem('never86_chits', JSON.stringify(scenarioData.chits || []));
+      localStorage.setItem('never86_messages', JSON.stringify(scenarioData.messages || []));
+    } catch (error) {
+      console.error('Error saving scenario data to localStorage:', error);
+      throw new Error('Failed to save scenario data');
+    }
+
+    // Initialize table history from completed orders
+    const completedOrders = (scenarioData.orders || []).filter(o => o.status === 'completed');
+    const initialHistory = [];
+    completedOrders.forEach(order => {
+      const table = (scenarioData.tables || []).find(t => t.id === order.tableId);
+      const orderChits = (scenarioData.chits || []).filter(c => c.orderId === order.id);
+      
+      const seatedTime = order.createdAt ? new Date(order.createdAt) : null;
+      const orderCreatedTime = new Date(order.createdAt);
+      const closingTime = new Date(order.closedAt);
+      
+      const timeToOrder = seatedTime ? Math.floor((orderCreatedTime - seatedTime) / 60000) : 0;
+      
+      const avgOrderRunTime = orderChits.length > 0
+        ? orderChits.reduce((sum, chit) => {
+            if (chit.completedAt && chit.createdAt) {
+              const runTime = Math.floor((new Date(chit.completedAt) - new Date(chit.createdAt)) / 60000);
+              return sum + runTime;
+            }
+            return sum;
+          }, 0) / orderChits.length
+        : 0;
+      
+      const totalPartyTime = seatedTime ? Math.floor((closingTime - seatedTime) / 60000) : 0;
+      
+      initialHistory.push({
+        id: `history-${order.id}`,
+        tableId: order.tableId,
+        tableNumber: table?.number,
+        orderId: order.id,
+        serverId: order.serverId,
+        guestCount: order.guestCount,
+        seatedAt: seatedTime?.toISOString(),
+        orderCreatedAt: order.createdAt,
+        closedAt: order.closedAt,
+        timeToOrder,
+        avgOrderRunTime,
+        totalPartyTime,
+        totalSales: order.items?.reduce((sum, item) => sum + item.price, 0) || 0,
+        tip: order.tip || 0,
+        chits: orderChits.map(c => ({
+          id: c.id,
+          createdAt: c.createdAt,
+          completedAt: c.completedAt,
+          runTime: c.completedAt && c.createdAt
+            ? Math.floor((new Date(c.completedAt) - new Date(c.createdAt)) / 60000)
+            : null
+        }))
+      });
+    });
+    
+    localStorage.setItem('never86_tableHistory', JSON.stringify(initialHistory));
+    setTableHistory(initialHistory);
+  };
 
   // Function to reload mock data
   const reloadMockData = () => {
@@ -965,6 +1093,7 @@ export function DataProvider({ children }) {
       markAllMessagesAsRead,
       // Data management
       reloadMockData,
+      loadScenarioData,
       tableHistory,
     }}>
       {children}
